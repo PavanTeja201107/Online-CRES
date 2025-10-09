@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
+const db = require('./config/db');
 
 const app = express();
 const PORT = process.env.PORT || 5500;
@@ -22,6 +23,16 @@ const limiter = rateLimit({
   max: 200
 });
 app.use(limiter);
+
+(async () => {
+  try {
+    const [rows] = await db.query('SELECT 1');
+    console.log('MySQL connected successfully');
+  } catch (err) {
+    console.error('MySQL connection error:', err.message);
+  }
+})();
+
 
 // import routes
 const authRoutes = require('./routes/auth');

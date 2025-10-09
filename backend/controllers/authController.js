@@ -6,12 +6,12 @@ const nodemailer = require('nodemailer');
 const { logAction } = require('../utils/audit');
 
 const smtpTransport = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: +process.env.SMTP_PORT,
-  secure: false,
+  host: process.env.SMTP_HOST,       // smtp.gmail.com
+  port: 465,                         // 465 for SSL
+  secure: true,                       // must be true for port 465
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
+    user: process.env.SMTP_USER,     // your Gmail
+    pass: process.env.SMTP_PASS      // 16-char app password
   }
 });
 
@@ -20,14 +20,21 @@ function generateOtpCode() {
 }
 
 const login = async (req, res) => {
+  console.log('Login attempt:', req.body);
   const { studentId, password } = req.body;
+
   try {
     // Check student table
     const [rows] = await pool.query('SELECT * FROM Student WHERE student_id = ?', [studentId]);
+    console.log('DB rows:', rows);
     if (!rows.length) return res.status(401).json({ error: 'Invalid credentials' });
 
     const user = rows[0];
+    console.log('Entered password:', password);
+    console.log('Stored hash:', user.password_hash);
+
     const valid = await bcrypt.compare(password, user.password_hash);
+    console.log('Password valid?', valid);
     if (!valid) {
       await logAction(studentId, req.ip, 'LOGIN_FAILURE', 'Invalid password');
       return res.status(401).json({ error: 'Invalid credentials' });
