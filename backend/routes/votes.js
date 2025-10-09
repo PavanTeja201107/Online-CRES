@@ -4,6 +4,6 @@ const { verifyToken } = require('../middleware/auth');
 const VoteController = require('../controllers/voteController');
 
 router.post('/', verifyToken, VoteController.castVote);
-router.get('/election/:electionId/results', verifyToken, VoteController.getResults); // admin or open depending on SRS
+router.get('/election/:electionId/results', verifyToken, VoteController.getResults); // Not totally implemented ... Need to do laterr->bala.
 
 module.exports = router;

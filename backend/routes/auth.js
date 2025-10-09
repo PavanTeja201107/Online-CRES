@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const AuthController = require('../controllers/authController');
 
+router.post('/admin/login', AuthController.adminLogin); // Admin login without OTP
+
 router.post('/login', AuthController.login);              // password + generate OTP and/or verify
 router.post('/verify-otp', AuthController.verifyOtp);     // verify OTP -> issue JWT + create session
 router.post('/change-password', AuthController.changePassword); // first-time password change

@@ -147,4 +147,52 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { login, verifyOtp, changePassword, requestPasswordReset, resetPassword };
+const adminLogin = async (req, res) => {
+  try {
+    const { adminId, password } = req.body;
+    if (!adminId || !password)
+      return res.status(400).json({ error: 'Missing adminId or password' });
+
+    const [rows] = await pool.query('SELECT * FROM Admin WHERE admin_id = ?', [adminId]);
+    if (rows.length === 0)
+      return res.status(401).json({ error: 'Invalid admin ID or password' });
+
+    const admin = rows[0];
+    const valid = await bcrypt.compare(password, admin.password_hash);
+    if (!valid)
+      return res.status(401).json({ error: 'Invalid admin ID or password' });
+
+    // Delete any existing sessions for this admin
+    await pool.query('DELETE FROM Session WHERE user_id = ?', [adminId]);
+
+    // Create new session and JWT
+    const sessionId = uuidv4();
+    const jwtPayload = { userId: adminId, role: 'ADMIN', sessionId };
+    const token = jwt.sign(jwtPayload, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+    });
+
+    const expiry = new Date(Date.now() + 60 * 60 * 1000);
+    await pool.query(
+      'INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, NOW(), ?)',
+      [sessionId, adminId, 'ADMIN', expiry]
+    );
+
+    res.json({
+      message: 'Admin login successful',
+      token,
+      admin: {
+        id: admin.admin_id,
+        name: admin.name,
+        email: admin.email,
+      },
+    });
+  } catch (err) {
+    console.error('Admin login error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
+
+module.exports = { login, verifyOtp, changePassword, requestPasswordReset, resetPassword, adminLogin };
