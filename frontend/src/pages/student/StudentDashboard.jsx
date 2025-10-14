@@ -31,20 +31,9 @@ export default function StudentDashboard() {
         <h1 className="text-2xl font-bold">Student Dashboard</h1>
         <button onClick={handleLogout} className="bg-red-600 text-white px-3 py-1 rounded">Logout</button>
       </div>
-      {election ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <div key={election.election_id} className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold">{election.class_name} Election</h3>
-            <div className="mt-2 text-sm text-gray-600">Nomination ends: {new Date(election.nomination_end).toLocaleString()}</div>
-            <div className="mt-2 flex gap-2">
-              <Link to={`/student/nominations?election=${election.election_id}`} className="px-4 py-2 bg-blue-600 text-white rounded">Nominate</Link>
-              <Link to={`/student/elections/${election.election_id}`} className="px-4 py-2 bg-green-600 text-white rounded">Vote</Link>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="text-gray-500">No active election for your class</div>
-      )}
+      <div>
+        <p>Welcome to Student area.</p>
+      </div>
     </div>
   )
 }
