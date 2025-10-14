@@ -150,18 +150,21 @@ const resetPassword = async (req, res) => {
 const adminLogin = async (req, res) => {
   try {
     const { adminId, password } = req.body;
-    if (!adminId || !password)
+    if (!adminId || !password) {
+      await logAction(adminId || 'UNKNOWN', req.ip, 'LOGIN_FAILURE', 'Missing adminId or password');
       return res.status(400).json({ error: 'Missing adminId or password' });
-
+    }
     const [rows] = await pool.query('SELECT * FROM Admin WHERE admin_id = ?', [adminId]);
-    if (rows.length === 0)
+    if (rows.length === 0) {
+      await logAction(adminId, req.ip, 'LOGIN_FAILURE', 'Invalid admin ID');
       return res.status(401).json({ error: 'Invalid admin ID or password' });
-
+    }
     const admin = rows[0];
     const valid = await bcrypt.compare(password, admin.password_hash);
-    if (!valid)
+    if (!valid) {
+      await logAction(adminId, req.ip, 'LOGIN_FAILURE', 'Invalid password');
       return res.status(401).json({ error: 'Invalid admin ID or password' });
-
+    }
     // Delete any existing sessions for this admin
     await pool.query('DELETE FROM Session WHERE user_id = ?', [adminId]);
 
@@ -178,6 +181,8 @@ const adminLogin = async (req, res) => {
       [sessionId, adminId, 'ADMIN', expiry]
     );
 
+    await logAction(adminId, req.ip, 'LOGIN_SUCCESS', 'Admin logged in successfully');
+
     res.json({
       message: 'Admin login successful',
       token,
@@ -189,6 +194,7 @@ const adminLogin = async (req, res) => {
     });
   } catch (err) {
     console.error('Admin login error:', err);
+    await logAction('UNKNOWN', req.ip, 'LOGIN_FAILURE', 'Server error during login');
     res.status(500).json({ error: 'Server error' });
   }
 };
