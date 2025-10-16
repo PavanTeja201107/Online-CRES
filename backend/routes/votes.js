@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
-const VoteController = require('../controllers/voteController');
+const ctrl = require('../controllers/votesController');
 
-router.post('/', verifyToken, VoteController.castVote);
-router.get('/election/:electionId/results', verifyToken, VoteController.getResults); // Not totally implemented ... Need to do laterr->bala.
+router.get('/election/:electionId/token', verifyToken, ctrl.getOrCreateTokenForStudent); // student requests token in-session
+router.post('/', verifyToken, ctrl.castVote); // student casts vote (uses token in server session)
+router.get('/election/:electionId/results', verifyToken, ctrl.getResults); // admin/public after publish
 
 module.exports = router;

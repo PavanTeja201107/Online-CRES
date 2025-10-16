@@ -1,4 +1,5 @@
 import axios from './axiosInstance';
 
-export const submitNomination = (formData) => axios.post('/nominations', formData, { headers: {'Content-Type':'multipart/form-data'}}).then(r=>r.data);
-export const listByElection = (electionId) => axios.get(`/nominations/election/${electionId}`).then(r=>r.data);
+// backend expects JSON { election_id, manifesto, photo_url }
+export const submitNomination = (payload) => axios.post('/nominations', payload).then(r => r.data);
+export const listByElection = (electionId) => axios.get(`/nominations/election/${electionId}`).then(r => r.data);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { verifyOtp } from '../../api/authApi';
 import { useAuth } from '../../context/AuthContext';
+import Navbar from '../../components/Navbar';
 
 export default function VerifyOtp(){
   const [otp, setOtp] = useState('');
@@ -36,17 +37,20 @@ export default function VerifyOtp(){
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={submit} className="bg-white p-6 rounded shadow w-80">
-        <h2 className="text-xl font-semibold mb-4">Verify OTP</h2>
-        <p className="text-sm mb-3">OTP was sent to the email linked to student ID <strong>{studentId || '...'}</strong></p>
-        {!state?.studentId && (
-          <input value={studentIdInput} onChange={e=>setStudentIdInput(e.target.value)} placeholder="Student ID (if not auto-filled)" className="border p-2 w-full mb-3" />
-        )}
-        {err && <p className="text-red-600 mb-2">{err}</p>}
-        <input value={otp} onChange={e=>setOtp(e.target.value)} placeholder="Enter OTP" className="border p-2 w-full mb-4" />
-        <button disabled={loading} className="bg-blue-600 text-white w-full py-2 rounded disabled:opacity-60">{loading ? 'Verifying...' : 'Verify'}</button>
-      </form>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="container mx-auto px-6 py-20 flex justify-center">
+        <form onSubmit={submit} className="bg-white p-6 rounded shadow w-80">
+          <h2 className="text-xl font-semibold mb-4 text-indigo-700">Verify OTP</h2>
+          <p className="text-sm mb-3">OTP was sent to the email linked to student ID <strong>{studentId || '...'}</strong></p>
+          {!state?.studentId && (
+            <input value={studentIdInput} onChange={e=>setStudentIdInput(e.target.value)} placeholder="Student ID (if not auto-filled)" className="border p-2 w-full mb-3" />
+          )}
+          {err && <p className="text-red-600 mb-2">{err}</p>}
+          <input value={otp} onChange={e=>setOtp(e.target.value)} placeholder="Enter OTP" className="border p-2 w-full mb-4" />
+          <button disabled={loading} className="bg-indigo-600 text-white w-full py-2 rounded disabled:opacity-60">{loading ? 'Verifying...' : 'Verify'}</button>
+        </form>
+      </div>
     </div>
   );
 }

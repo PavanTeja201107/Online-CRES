@@ -1,0 +1,14 @@
+Harden token hashing & secrets:
+tokenUtils.hashToken currently uses sha256(token + salt) with a single salt from env. Consider:
+Use HMAC with a secret (crypto.createHmac) or use a keyed KDF (PBKDF2/HKDF) with a per-token salt if you ever need to compare with stored salt.
+Move TOKEN_SALT to a strong secret and rotate if needed (store rotation policy).
+
+For JWT secret ensure it is strong and not checked into source.
+CORS and production settings
+server.js uses origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' — good, but:
+In production set explicit FRONTEND_ORIGIN to your domain(s).
+Consider using a whitelist array if multiple origins required.
+If credentials: true and cookies used in the future, ensure secure cookie flags and httpsOnly in production.
+Session lifecycle & refresh tokens
+Currently JWT expires and Session DB has expiry — ok. Consider:
+Adding refresh tokens (longer-lived, stored securely, rotate on use), or Shorten access token lifetime and allow refresh via a refresh_token API that validates Session row.
