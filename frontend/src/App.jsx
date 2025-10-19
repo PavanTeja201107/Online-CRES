@@ -13,6 +13,7 @@ import AdminResults from './pages/admin/Results';
 import AdminProfile from './pages/admin/Profile';
 import GuestRoute from './components/GuestRoute';
 import AdminPolicy from './pages/admin/Policy';
+import AuditLogs from './pages/admin/AuditLogs';
 
 function Landing(){
   const token = localStorage.getItem('token');
@@ -68,6 +69,7 @@ export default function App() {
       <Route path="/admin/elections" element={<ProtectedRoute role="ADMIN"><AdminElections/></ProtectedRoute>} />
       <Route path="/admin/nominations" element={<ProtectedRoute role="ADMIN"><AdminNominations/></ProtectedRoute>} />
   <Route path="/admin/policy" element={<ProtectedRoute role="ADMIN"><AdminPolicy/></ProtectedRoute>} />
+    <Route path="/admin/audit" element={<ProtectedRoute role="ADMIN"><AuditLogs/></ProtectedRoute>} />
       <Route path="/admin/results" element={<ProtectedRoute role="ADMIN"><AdminResults/></ProtectedRoute>} />
       <Route path="/admin/profile" element={<ProtectedRoute role="ADMIN"><AdminProfile/></ProtectedRoute>} />
 

@@ -28,6 +28,7 @@ export default function Navbar(){
 			<NavLink to="/admin/elections" className={linkClass}>Elections</NavLink>
 			<NavLink to="/admin/nominations" className={linkClass}>Nominations</NavLink>
 			<NavLink to="/admin/policy" className={linkClass}>Policy</NavLink>
+			<NavLink to="/admin/audit" className={linkClass}>Audit Logs</NavLink>
 			<NavLink to="/admin/results" className={linkClass}>Results</NavLink>
 			<NavLink to="/admin/profile" className={linkClass}>Profile</NavLink>
 		</nav>
