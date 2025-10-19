@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
-import { getMyActiveElection, getMyElections } from '../../api/electionApi';
+import { getMyElections } from '../../api/electionApi';
 import { submitNomination, getMyNomination } from '../../api/nominationApi';
 import { getPolicy, acceptPolicy } from '../../api/policyApi';
-import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 
 export default function NominationForm(){
-		const [election, setElection] = useState(null);
-		const [eligibleElections, setEligibleElections] = useState([]);
+			const [election, setElection] = useState(null);
+			const [allElections, setAllElections] = useState([]);
 		const [myNomination, setMyNomination] = useState(null);
 	const [manifesto, setManifesto] = useState('');
 	const [photoUrl, setPhotoUrl] = useState('');
@@ -22,12 +21,8 @@ export default function NominationForm(){
 	useEffect(()=>{
 		(async () => {
 			try {
-				// fetch all my class elections and filter where nominations are open
 				const list = await getMyElections();
-				const now = Date.now();
-				const open = (list||[]).filter(e => now >= new Date(e.nomination_start).getTime() && now <= new Date(e.nomination_end).getTime());
-				setEligibleElections(open);
-				if (open.length) setElection(open[0]);
+				setAllElections(list||[]);
 				try { const p = await getPolicy(); setPolicy(p); } catch {}
 			} catch (error) {
 				setErr(error.response?.data?.error || 'Failed to load elections');
@@ -35,7 +30,7 @@ export default function NominationForm(){
 		})();
 	},[]);
 
-		useEffect(()=>{
+			useEffect(()=>{
 			(async ()=>{
 				setMyNomination(null);
 				if (!election) return;
@@ -48,12 +43,17 @@ export default function NominationForm(){
 
 		const submit = async (e) => {
 		e.preventDefault(); setErr(''); setMsg('');
-		try {
+			try {
 				if (!election) throw new Error('Select an election where nominations are open');
 				if (myNomination) throw new Error('You have already submitted a nomination for this election');
       if (policy && !accepted) { setShowPolicy(true); return; }
 			const res = await submitNomination({ election_id: election.election_id, manifesto, photo_url: photoUrl });
 			setMsg(res?.message || 'Nomination submitted');
+				// mark as submitted locally so the form disables without needing a refetch
+				setMyNomination({ submitted: true });
+				// optional: clear form fields
+				setManifesto('');
+				setPhotoUrl('');
 		} catch (error) {
 			setErr(error.response?.data?.error || error.message || 'Failed to submit');
 		}
@@ -64,30 +64,57 @@ export default function NominationForm(){
 			<Navbar />
 			<div className="container mx-auto px-6 py-8">
 						<h1 className="text-2xl font-semibold mb-4">Nomination</h1>
-						{err && <Alert kind="danger" className="mb-2">{err}</Alert>}
-						{msg && <Alert kind="success" className="mb-2">{msg}</Alert>}
-						<form onSubmit={submit} className="bg-white p-4 rounded shadow max-w-xl">
-							<div className="mb-3">
-								<Select label="Select Election (open nominations)" value={election?.election_id || ''} onChange={(e)=>{
-									const id = Number(e.target.value); const sel = eligibleElections.find(x=>x.election_id===id); setElection(sel||null);
-								}}>
-									<option value="">-- Choose --</option>
-									{eligibleElections.map(e => (
-										<option key={e.election_id} value={e.election_id}>Election #{e.election_id} — {new Date(e.nomination_end).toLocaleString()} closes</option>
-									))}
-								</Select>
-							</div>
-							{myNomination && (
-								<Alert kind="info" className="mb-3">You already submitted a nomination for Election #{election?.election_id}. You can’t submit again.</Alert>
-							)}
-					<label className="block text-sm mb-2">Manifesto <span className="text-red-600">*</span>
-						<textarea value={manifesto} onChange={e=>setManifesto(e.target.value)} placeholder="Your manifesto" className="border p-2 w-full h-32 mt-1 mb-3" required />
-					</label>
-					<label className="block text-sm mb-2">Photo URL (optional)
-						<input value={photoUrl} onChange={e=>setPhotoUrl(e.target.value)} placeholder="https://..." className="border p-2 w-full mt-1 mb-3" />
-					</label>
-							<Button disabled={!manifesto || !election || !!myNomination} className="px-4">Submit Nomination</Button>
-				</form>
+								{err && <Alert kind="danger" className="mb-2">{err}</Alert>}
+								{msg && <Alert kind="success" className="mb-2">{msg}</Alert>}
+
+								<div className="bg-white p-4 rounded shadow mb-6">
+									<h2 className="font-semibold mb-3">Class Elections</h2>
+									<ul className="divide-y">
+										{(allElections||[]).map(e => {
+											const now = Date.now();
+											const ns = new Date(e.nomination_start).getTime();
+											const ne = new Date(e.nomination_end).getTime();
+											const open = now >= ns && now <= ne;
+											return (
+												<li key={e.election_id} className="py-3 flex items-center justify-between">
+													<div className="text-sm">
+														<div className="font-medium">Election #{e.election_id}</div>
+														<div className="text-gray-600">Nominations: {new Date(e.nomination_start).toLocaleString()} - {new Date(e.nomination_end).toLocaleString()}</div>
+													</div>
+													<div>
+														<Button variant={open? 'primary':'secondary'} disabled={!open} onClick={()=>setElection(e)}>{open? 'Nominate' : 'Closed'}</Button>
+													</div>
+												</li>
+											);
+										})}
+										{(!allElections || allElections.length===0) && (
+											<li className="py-3 text-gray-600">No elections found for your class.</li>
+										)}
+									</ul>
+								</div>
+
+								{election && (()=>{
+									const now = Date.now();
+									const ns = new Date(election.nomination_start).getTime();
+									const ne = new Date(election.nomination_end).getTime();
+									const open = now >= ns && now <= ne;
+									if (!open) return null;
+									return (
+										<form onSubmit={submit} className="bg-white p-4 rounded shadow max-w-xl">
+											<h3 className="font-semibold mb-2">Submit Nomination for Election #{election.election_id}</h3>
+											{myNomination && (
+												<Alert kind="info" className="mb-3">You already submitted a nomination for this election. You can’t submit again.</Alert>
+											)}
+											<label className="block text-sm mb-2">Manifesto <span className="text-red-600">*</span>
+												<textarea value={manifesto} onChange={e=>setManifesto(e.target.value)} placeholder="Your manifesto" className="border p-2 w-full h-32 mt-1 mb-3" required />
+											</label>
+											<label className="block text-sm mb-2">Photo URL (optional)
+												<input value={photoUrl} onChange={e=>setPhotoUrl(e.target.value)} placeholder="https://..." className="border p-2 w-full mt-1 mb-3" />
+											</label>
+											<Button disabled={!manifesto || !!myNomination} className="px-4">Submit Nomination</Button>
+										</form>
+									);
+								})()}
 
 	        {showPolicy && policy && (
 	          <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
