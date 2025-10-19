@@ -19,10 +19,20 @@ export default function Navbar(){
 
 	const isAdmin = user?.role === 'ADMIN';
 
-	const linkClass = ({isActive}) => `block px-3 py-2 rounded-md transition ${isActive ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`;
+	// Pill-style tab classes
+	const linkClass = ({ isActive }) => [
+		'inline-flex items-center',
+		'px-4 py-3', // padding: 16px x, ~12px y
+		'rounded-xl', // 12px radius
+		'border transition',
+		'isolate relative',
+		isActive
+			? 'bg-indigo-600 text-white border-indigo-600 shadow-[0_2px_8px_rgba(91,95,204,0.3)]'
+			: 'bg-white/80 text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400 hover:shadow-sm hover:scale-[1.02]'
+	].join(' ');
 
 	const AdminMenu = () => (
-		<nav className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm">
+		<nav className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 text-sm">
 			<NavLink to="/admin/students" className={linkClass}>Students</NavLink>
 			<NavLink to="/admin/classes" className={linkClass}>Classes</NavLink>
 			<NavLink to="/admin/elections" className={linkClass}>Elections</NavLink>
@@ -35,7 +45,7 @@ export default function Navbar(){
 	);
 
 	const StudentMenu = () => (
-		<nav className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm">
+		<nav className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 text-sm">
 			<NavLink to="/student/election" className={linkClass}>Election</NavLink>
 			<NavLink to="/student/nomination" className={linkClass}>Nomination</NavLink>
 			<NavLink to="/student/vote" className={linkClass}>Vote</NavLink>
