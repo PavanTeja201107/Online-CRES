@@ -1,17 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getAuditLogs } from '../../api/auditApi';
+import Input from '../../components/ui/Input';
+import Button from '../../components/ui/Button';
 
 export default function AuditLogs(){
 	const [logs, setLogs] = useState([]);
 	const [err, setErr] = useState('');
+	const [from, setFrom] = useState('');
+	const [to, setTo] = useState('');
+	const [userId, setUserId] = useState('');
+	const [actionType, setActionType] = useState('');
+	const [role, setRole] = useState('');
 
-	useEffect(()=>{
-		(async()=>{
-			try{ const data = await getAuditLogs(); setLogs(data || []); }
-			catch(e){ setErr(e.response?.data?.error || 'Failed to load'); }
-		})();
-	},[]);
+	const load = async () => {
+		try{
+			const params = {};
+			if (from) params.from = from;
+			if (to) params.to = to;
+			if (userId) params.user_id = userId;
+			if (actionType) params.action_type = actionType;
+			if (role) params.role = role;
+			const data = await getAuditLogs(params);
+			setLogs(data || []);
+		}catch(e){ setErr(e.response?.data?.error || 'Failed to load'); }
+	};
+
+	useEffect(()=>{ load(); },[]);
 
 	return (
 		<div className="min-h-screen bg-gray-50">
@@ -19,7 +34,19 @@ export default function AuditLogs(){
 			<div className="container mx-auto px-6 py-8">
 				<h1 className="text-2xl font-bold mb-4">Audit Logs</h1>
 				{err && <div className="text-red-600 mb-2">{err}</div>}
-				<div className="bg-white rounded shadow overflow-auto">
+						<div className="bg-white p-4 rounded shadow mb-4 grid md:grid-cols-5 gap-3 items-end">
+							<Input label="From" type="date" value={from} onChange={e=>setFrom(e.target.value)} />
+							<Input label="To" type="date" value={to} onChange={e=>setTo(e.target.value)} />
+							<Input label="User ID" value={userId} onChange={e=>setUserId(e.target.value)} />
+							<Input label="Action Type" value={actionType} onChange={e=>setActionType(e.target.value)} />
+							<Input label="Role" value={role} onChange={e=>setRole(e.target.value)} />
+							<div className="md:col-span-5 flex gap-2">
+								<Button onClick={load}>Apply Filters</Button>
+								<Button variant="secondary" onClick={()=>{ setFrom(''); setTo(''); setUserId(''); setActionType(''); setRole(''); setErr(''); load(); }}>Reset</Button>
+							</div>
+						</div>
+
+						<div className="bg-white rounded shadow overflow-auto">
 					<table className="min-w-full text-sm">
 						<thead>
 							<tr className="bg-gray-100 text-left">

@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { getMyActiveElection } from '../../api/electionApi';
+import { getMyNotifications } from '../../api/notificationsApi';
+import Alert from '../../components/ui/Alert';
 
 export default function StudentDashboard() {
   const [election, setElection] = useState(null);
+  const [notices, setNotices] = useState([]);
 
   useEffect(()=>{
     const fetch = async ()=>{
@@ -14,6 +17,10 @@ export default function StudentDashboard() {
       }catch(err){
         setElection(null);
       }
+      try{
+        const n = await getMyNotifications();
+        setNotices(n||[]);
+      }catch{}
     };
     fetch();
   },[]);
@@ -40,6 +47,20 @@ export default function StudentDashboard() {
             ) : (
               <div className="text-gray-600">No active election</div>
             )}
+          </div>
+
+          <div className="bg-white p-4 rounded shadow">
+            <h2 className="font-semibold mb-2">Notifications</h2>
+            {(!notices || notices.length===0) && <div className="text-gray-600">No notifications yet</div>}
+            <div className="space-y-2">
+              {(notices||[]).map((n, idx) => (
+                <Alert key={idx} kind={n.type==='RESULTS_PUBLISHED'?'success': n.type==='VOTING_OPEN'?'info':'warning'}>
+                  <div className="text-sm">
+                    <span className="font-medium">Election #{n.election_id}:</span> {n.message}
+                  </div>
+                </Alert>
+              ))}
+            </div>
           </div>
         </div>
       </div>

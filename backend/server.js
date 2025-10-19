@@ -38,6 +38,7 @@ app.use('/api/policy', require('./routes/policy'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/students', require('./routes/students'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 app.get('/', (req, res) => res.json({ message: 'Class Representative Election System backend up' }));
 

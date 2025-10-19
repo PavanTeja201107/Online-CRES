@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
-import { listStudents, createStudent, updateStudent, deleteStudent, resetStudentPassword } from '../../api/adminApi';
+import { listStudents, createStudent, updateStudent, deleteStudent, resetStudentPassword, listClasses } from '../../api/adminApi';
+import Select from '../../components/ui/Select';
 
 export default function AdminStudents(){
   const [students, setStudents] = useState([]);
   const [form, setForm] = useState({ student_id:'', name:'', email:'', date_of_birth:'', class_id:'' });
   const [err, setErr] = useState('');
+  const [classes, setClasses] = useState([]);
   const [msg, setMsg] = useState('');
 
   const load = async () => {
@@ -15,7 +17,7 @@ export default function AdminStudents(){
       setStudents(data);
     } catch (e){ setErr(e.response?.data?.error || 'Failed to load'); }
   };
-  useEffect(()=>{ load(); },[]);
+  useEffect(()=>{ load(); (async()=>{ try{ const c = await listClasses(); setClasses(c||[]);}catch{} })(); },[]);
 
   const submit = async (e) => {
     e.preventDefault(); setErr(''); setMsg('');
@@ -48,9 +50,12 @@ export default function AdminStudents(){
           <label className="text-sm">DOB <span className="text-red-600">*</span>
             <input type="date" placeholder="DOB" value={form.date_of_birth} onChange={e=>setForm({...form, date_of_birth:e.target.value})} className="border p-2 w-full mt-1" required />
           </label>
-          <label className="text-sm">Class ID <span className="text-red-600">*</span>
-            <input placeholder="Class ID" value={form.class_id} onChange={e=>setForm({...form, class_id:e.target.value})} className="border p-2 w-full mt-1" required />
-          </label>
+          <Select label="Class" required value={form.class_id} onChange={e=>setForm({...form, class_id:e.target.value})}>
+            <option value="">-- Select Class --</option>
+            {classes.map(c => (
+              <option key={c.class_id} value={c.class_id}>{c.class_id} - {c.class_name || 'Class'}</option>
+            ))}
+          </Select>
           <div className="text-xs text-gray-600 md:col-span-2">Default password rule: ddmmyyyynnnn (first 4 of ID). Shown after creation.</div>
           <button disabled={!form.student_id || !form.name || !form.email || !form.date_of_birth || !form.class_id} className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60">Create</button>
         </form>
