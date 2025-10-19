@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
-import { getMyActiveElection } from '../../api/electionApi';
-import { submitNomination } from '../../api/nominationApi';
+import { getMyActiveElection, getMyElections } from '../../api/electionApi';
+import { submitNomination, getMyNomination } from '../../api/nominationApi';
 import { getPolicy, acceptPolicy } from '../../api/policyApi';
+import Select from '../../components/ui/Select';
+import Button from '../../components/ui/Button';
+import Alert from '../../components/ui/Alert';
 
 export default function NominationForm(){
-	const [election, setElection] = useState(null);
+		const [election, setElection] = useState(null);
+		const [eligibleElections, setEligibleElections] = useState([]);
+		const [myNomination, setMyNomination] = useState(null);
 	const [manifesto, setManifesto] = useState('');
 	const [photoUrl, setPhotoUrl] = useState('');
 	const [msg, setMsg] = useState('');
@@ -17,19 +22,35 @@ export default function NominationForm(){
 	useEffect(()=>{
 		(async () => {
 			try {
-				const e = await getMyActiveElection();
-				setElection(e);
-          try { const p = await getPolicy(); setPolicy(p); } catch {}
+				// fetch all my class elections and filter where nominations are open
+				const list = await getMyElections();
+				const now = Date.now();
+				const open = (list||[]).filter(e => now >= new Date(e.nomination_start).getTime() && now <= new Date(e.nomination_end).getTime());
+				setEligibleElections(open);
+				if (open.length) setElection(open[0]);
+				try { const p = await getPolicy(); setPolicy(p); } catch {}
 			} catch (error) {
-				setErr(error.response?.data?.error || 'No active election');
+				setErr(error.response?.data?.error || 'Failed to load elections');
 			}
 		})();
 	},[]);
 
-	const submit = async (e) => {
+		useEffect(()=>{
+			(async ()=>{
+				setMyNomination(null);
+				if (!election) return;
+				try{
+					const mine = await getMyNomination(election.election_id);
+					setMyNomination(mine);
+				}catch{}
+			})();
+		}, [election]);
+
+		const submit = async (e) => {
 		e.preventDefault(); setErr(''); setMsg('');
 		try {
-			if (!election) throw new Error('No active election');
+				if (!election) throw new Error('Select an election where nominations are open');
+				if (myNomination) throw new Error('You have already submitted a nomination for this election');
       if (policy && !accepted) { setShowPolicy(true); return; }
 			const res = await submitNomination({ election_id: election.election_id, manifesto, photo_url: photoUrl });
 			setMsg(res?.message || 'Nomination submitted');
@@ -42,17 +63,30 @@ export default function NominationForm(){
 		<div className="min-h-screen bg-gray-50">
 			<Navbar />
 			<div className="container mx-auto px-6 py-8">
-				<h1 className="text-2xl font-semibold mb-4">Nomination</h1>
-				{err && <div className="text-red-600 mb-2">{err}</div>}
-				{msg && <div className="text-green-600 mb-2">{msg}</div>}
-				<form onSubmit={submit} className="bg-white p-4 rounded shadow max-w-xl">
+						<h1 className="text-2xl font-semibold mb-4">Nomination</h1>
+						{err && <Alert kind="danger" className="mb-2">{err}</Alert>}
+						{msg && <Alert kind="success" className="mb-2">{msg}</Alert>}
+						<form onSubmit={submit} className="bg-white p-4 rounded shadow max-w-xl">
+							<div className="mb-3">
+								<Select label="Select Election (open nominations)" value={election?.election_id || ''} onChange={(e)=>{
+									const id = Number(e.target.value); const sel = eligibleElections.find(x=>x.election_id===id); setElection(sel||null);
+								}}>
+									<option value="">-- Choose --</option>
+									{eligibleElections.map(e => (
+										<option key={e.election_id} value={e.election_id}>Election #{e.election_id} — {new Date(e.nomination_end).toLocaleString()} closes</option>
+									))}
+								</Select>
+							</div>
+							{myNomination && (
+								<Alert kind="info" className="mb-3">You already submitted a nomination for Election #{election?.election_id}. You can’t submit again.</Alert>
+							)}
 					<label className="block text-sm mb-2">Manifesto <span className="text-red-600">*</span>
 						<textarea value={manifesto} onChange={e=>setManifesto(e.target.value)} placeholder="Your manifesto" className="border p-2 w-full h-32 mt-1 mb-3" required />
 					</label>
 					<label className="block text-sm mb-2">Photo URL (optional)
 						<input value={photoUrl} onChange={e=>setPhotoUrl(e.target.value)} placeholder="https://..." className="border p-2 w-full mt-1 mb-3" />
 					</label>
-					<button disabled={!manifesto} className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60">Submit Nomination</button>
+							<Button disabled={!manifesto || !election || !!myNomination} className="px-4">Submit Nomination</Button>
 				</form>
 
 	        {showPolicy && policy && (
@@ -60,10 +94,10 @@ export default function NominationForm(){
 	            <div className="bg-white rounded shadow max-w-2xl w-full p-4">
 	              <h2 className="text-lg font-semibold mb-2">Election Policy</h2>
 	              <div className="h-64 overflow-auto border p-2 whitespace-pre-wrap text-sm mb-3">{policy.policy_text}</div>
-	              <div className="flex justify-end gap-2">
-	                <button onClick={()=>setShowPolicy(false)} className="px-3 py-1 rounded border">Cancel</button>
-	                <button onClick={async ()=>{ try{ await acceptPolicy(); setAccepted(true); setShowPolicy(false); setMsg('Policy accepted. Please submit again.'); }catch(e){ setErr(e.response?.data?.error || 'Failed to accept'); } }} className="px-3 py-1 rounded bg-indigo-600 text-white">I Accept</button>
-	              </div>
+								<div className="flex justify-end gap-2">
+									<Button variant="secondary" onClick={()=>setShowPolicy(false)}>Cancel</Button>
+									<Button onClick={async ()=>{ try{ await acceptPolicy(); setAccepted(true); setShowPolicy(false); setMsg('Policy accepted. Please submit again.'); }catch(e){ setErr(e.response?.data?.error || 'Failed to accept'); } }}>I Accept</Button>
+								</div>
 	            </div>
 	          </div>
 	        )}

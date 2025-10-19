@@ -4,3 +4,4 @@ import axios from './axiosInstance';
 export const submitNomination = (payload) => axios.post('/nominations', payload).then(r => r.data);
 export const listByElection = (electionId) => axios.get(`/nominations/election/${electionId}`).then(r => r.data);
 export const listApprovedByElection = (electionId) => axios.get(`/nominations/election/${electionId}/approved`).then(r => r.data);
+export const getMyNomination = (electionId) => axios.get(`/nominations/election/${electionId}/mine`).then(r => r.data);
