@@ -24,7 +24,17 @@ export default function VotePage(){
 				const e = await getMyActiveElection();
 				setElection(e);
 				const list = await listApprovedByElection(e.election_id);
-				setCandidates(list);
+				const normalize = (url) => {
+					try {
+						if (!url) return url;
+						let m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+						if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+						m = url.match(/[?&]id=([^&]+)/);
+						if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+						return url;
+					} catch { return url; }
+				};
+				setCandidates((list||[]).map(c => ({ ...c, photo_url: normalize(c.photo_url) })));
           try{ const p = await getPolicy(); setPolicy(p); }catch{}
 			} catch (error) {
 				setErr(error.response?.data?.error || 'No active election');

@@ -41,13 +41,29 @@ export default function NominationForm(){
 			})();
 		}, [election]);
 
+		const toDirectImageUrl = (url) => {
+			try {
+				if (!url) return url;
+				// Handle Google Drive share links
+				// Formats:
+				// - https://drive.google.com/file/d/FILE_ID/view?usp=sharing -> https://drive.google.com/uc?export=view&id=FILE_ID
+				// - https://drive.google.com/open?id=FILE_ID -> https://drive.google.com/uc?export=view&id=FILE_ID
+				let m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+				if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+				m = url.match(/[?&]id=([^&]+)/);
+				if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+				return url;
+			} catch { return url; }
+		};
+
 		const submit = async (e) => {
 		e.preventDefault(); setErr(''); setMsg('');
 			try {
 				if (!election) throw new Error('Select an election where nominations are open');
 				if (myNomination) throw new Error('You have already submitted a nomination for this election');
       if (policy && !accepted) { setShowPolicy(true); return; }
-			const res = await submitNomination({ election_id: election.election_id, manifesto, photo_url: photoUrl });
+			const normalizedUrl = toDirectImageUrl(photoUrl);
+			const res = await submitNomination({ election_id: election.election_id, manifesto, photo_url: normalizedUrl });
 			setMsg(res?.message || 'Nomination submitted');
 				// mark as submitted locally so the form disables without needing a refetch
 				setMyNomination({ submitted: true });

@@ -22,6 +22,11 @@ export default function AdminStudents(){
   const submit = async (e) => {
     e.preventDefault(); setErr(''); setMsg('');
     try {
+      const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+      if (!gmailRegex.test(String(form.email))) {
+        setErr('Only Gmail addresses are supported (example@gmail.com)');
+        return;
+      }
   const res = await createStudent(form);
   setMsg(`Student created. Default password: ${res?.defaultPassword || '(generated)'}`);
   setForm({ student_id:'', name:'', email:'', date_of_birth:'', class_id:'' });

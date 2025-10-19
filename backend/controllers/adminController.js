@@ -2,6 +2,7 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const logAction = require('../utils/logAction');
+const nodemailer = require('nodemailer');
 
 // =============== ADMIN PROFILE ===============
 exports.getProfile = async (req, res) => {
@@ -110,6 +111,12 @@ exports.createStudent = async (req, res) => {
     if (!student_id || !name || !email || !date_of_birth || !class_id)
       return res.status(400).json({ error: 'Missing fields' });
 
+    // Gmail-only email enforcement
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    if (!gmailRegex.test(String(email))) {
+      return res.status(400).json({ error: 'Only Gmail addresses are supported (example@gmail.com)' });
+    }
+
     // Default password rule: ddmmyyyynnnn (nnnn = first 4 digits of student_id), all lowercase
     // date_of_birth expected format: YYYY-MM-DD
     const [yyyy, mm, dd] = (date_of_birth || '').split('-');
@@ -122,6 +129,38 @@ exports.createStudent = async (req, res) => {
       [student_id, name, email, date_of_birth, class_id, hash, true]
     );
     await logAction(req.user.id, req.user.role, req.ip, 'STUDENT_CREATED', { student_id });
+    // Attempt to send welcome email with credentials
+    try {
+      const host = process.env.SMTP_HOST;
+      const port = parseInt(process.env.SMTP_PORT || '587');
+      const user = process.env.SMTP_USER; const pass = process.env.SMTP_PASS;
+      if (host && user && pass) {
+        const transporter = nodemailer.createTransport({ host, port, secure: false, auth: { user, pass } });
+        const subject = 'Welcome to Class Representative Election System';
+        const lines = [
+          `Dear ${name},`,
+          '',
+          'Your student account has been created. Please use the following credentials to log in and complete your first-time password change:',
+          '',
+          `Student ID: ${student_id}`,
+          `Default Password: ${defaultPassword}`,
+          '',
+          'Your profile:',
+          `- Name: ${name}`,
+          `- Email: ${email}`,
+          `- Class ID: ${class_id}`,
+          `- Date of Birth: ${date_of_birth}`,
+          '',
+          'For security, you will be required to set a new password on first login.',
+          '',
+          'Regards,',
+          'Election Committee'
+        ];
+        await transporter.sendMail({ from: process.env.OTP_EMAIL_FROM, to: email, subject, text: lines.join('\n') });
+      }
+    } catch (mailErr) {
+      console.error('createStudent welcome email error:', mailErr && mailErr.message ? mailErr.message : mailErr);
+    }
     res.json({ message: 'Student created successfully', defaultPassword });
   } catch (err) {
     console.error('createStudent error:', err);
@@ -133,6 +172,12 @@ exports.updateStudent = async (req, res) => {
   try {
     const id = req.params.id;
     const { name, email, class_id } = req.body;
+    if (email) {
+      const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+      if (!gmailRegex.test(String(email))) {
+        return res.status(400).json({ error: 'Only Gmail addresses are supported (example@gmail.com)' });
+      }
+    }
     await pool.query(
       'UPDATE Student SET name = COALESCE(?, name), email = COALESCE(?, email), class_id = COALESCE(?, class_id) WHERE student_id = ?',
       [name, email, class_id, id]

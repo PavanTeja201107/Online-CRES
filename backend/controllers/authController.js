@@ -67,6 +67,11 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const user = rows[0];
+    // Gmail-only support
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    if (!gmailRegex.test(String(user.email || ''))) {
+      return res.status(400).json({ error: 'Only Gmail addresses are supported (example@gmail.com)' });
+    }
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       await logAction(studentId, 'STUDENT', ip, 'LOGIN_FAILURE', { reason: 'invalid_password' }, 'FAILURE');
@@ -150,6 +155,11 @@ exports.requestPasswordReset = async (req, res) => {
     const user = studentRows[0] || adminRows[0];
     const role = studentRows.length ? 'STUDENT' : adminRows.length ? 'ADMIN' : null;
     if (!user) return res.status(404).json({ error: 'User not found' });
+    // Gmail-only support for password reset target
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    if (!gmailRegex.test(String(user.email || ''))) {
+      return res.status(400).json({ error: 'Only Gmail addresses are supported (example@gmail.com)' });
+    }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = new Date(Date.now() + 10 * 60 * 1000);
