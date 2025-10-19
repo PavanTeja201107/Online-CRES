@@ -43,6 +43,8 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.get('/', (req, res) => res.json({ message: 'Class Representative Election System backend up' }));
 
 const pool = require('./config/db');
+const { genToken, hashToken } = require('./utils/tokenUtils');
+const { v4: uuidv4 } = require('uuid');
 setInterval(async () => {
   try {
     // Expire/cleanup OTPs
@@ -68,10 +70,44 @@ setInterval(async () => {
         console.error('Election auto-close error:', innerErr && innerErr.message ? innerErr.message : innerErr);
       }
     }
+
+    // Auto-activate elections at nomination start if not already active/published
+    const [toActivate] = await pool.query(
+      'SELECT election_id, class_id FROM Election WHERE is_active = FALSE AND is_published = FALSE AND nomination_start <= NOW()'
+    );
+    for (const row of toActivate) {
+      try {
+        // ensure no other active election exists for this class
+        const [activeOther] = await pool.query('SELECT 1 FROM Election WHERE class_id = ? AND is_active = TRUE LIMIT 1', [row.class_id]);
+        if (activeOther.length) continue;
+
+        // create tokens and voter status for students of this class
+        const [students] = await pool.query('SELECT student_id FROM Student WHERE class_id = ?', [row.class_id]);
+        const insertVt = [];
+        const insertVs = [];
+        for (const s of students) {
+          const token = genToken();
+          const tokenHash = hashToken(token);
+          const tokenId = uuidv4();
+          insertVt.push([tokenId, s.student_id, row.election_id, tokenHash]);
+          insertVs.push([s.student_id, row.election_id, false]);
+        }
+        if (insertVt.length) {
+          await pool.query('INSERT INTO VotingToken (token_id, student_id, election_id, token_hash) VALUES ?', [insertVt]);
+          await pool.query('INSERT INTO VoterStatus (student_id, election_id, has_voted) VALUES ?', [insertVs]);
+        }
+
+        await pool.query('UPDATE Election SET is_active = TRUE WHERE election_id = ?', [row.election_id]);
+        const logAction = require('./utils/logAction');
+        await logAction('SYSTEM', 'SYSTEM', null, 'ELECTION_ACTIVATED_AUTO', { election_id: row.election_id });
+      } catch (innerErr) {
+        console.error('Election auto-activate error:', innerErr && innerErr.message ? innerErr.message : innerErr);
+      }
+    }
   } catch (err) {
     console.error('Maintenance job error:', err && err.message ? err.message : err);
   }
-}, 1000 * 60 * 60);
+}, 1000 * 60);
 
 app.use((err, req, res, next) => {
   console.error(err);

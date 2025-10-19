@@ -21,7 +21,21 @@ export default function AdminElections(){
 
   const submit = async (e)=>{
     e.preventDefault(); setErr(''); setMsg('');
-    try { await createElection(form); setMsg('Election created'); setForm({ class_id:'', nomination_start:'', nomination_end:'', voting_start:'', voting_end:'' }); load(); }
+    // client-side strict validation: ns < ne < vs < ve
+    try {
+      const ns = new Date(form.nomination_start);
+      const ne = new Date(form.nomination_end);
+      const vs = new Date(form.voting_start);
+      const ve = new Date(form.voting_end);
+      if (!(ns < ne && ne < vs && vs < ve)) {
+        setErr('Invalid timeline: ensure nomination_start < nomination_end < voting_start < voting_end');
+        return;
+      }
+      await createElection(form);
+      setMsg('Election created');
+      setForm({ class_id:'', nomination_start:'', nomination_end:'', voting_start:'', voting_end:'' });
+      load();
+    }
     catch(e){ setErr(e.response?.data?.error || 'Failed to create'); }
   };
 
@@ -76,10 +90,20 @@ export default function AdminElections(){
                   <td className="p-2">{e.is_active ? 'Yes' : 'No'}</td>
                   <td className="p-2">{e.is_published ? 'Yes' : 'No'}</td>
                   <td className="p-2 flex gap-2">
-                    <button onClick={async()=>{ await activateElection(e.election_id); push('Election activated','success'); load(); }} className="text-indigo-600">Activate</button>
-                    <button onClick={async()=>{ await notifyNominationOpen(e.election_id); push('Nomination notifications sent','success'); }} className="text-blue-600">Notify Nomination</button>
-                    <button onClick={async()=>{ await notifyVotingOpen(e.election_id); push('Voting notifications sent','success'); }} className="text-blue-600">Notify Voting</button>
-                    <button onClick={async()=>{ await publishElection(e.election_id); push('Results published','success'); load(); }} className="text-green-700">Publish</button>
+                    {(() => {
+                      const now = Date.now();
+                      const ve = new Date(e.voting_end).getTime();
+                      const canPublish = ve <= now;
+                      const disableActivate = e.is_active;
+                      return (
+                        <>
+                          <button onClick={async()=>{ if(disableActivate) return; await activateElection(e.election_id); push('Election activated','success'); load(); }} disabled={disableActivate} className="text-indigo-600 disabled:opacity-50" title={disableActivate? 'Already active' : ''}>Activate</button>
+                          <button onClick={async()=>{ await notifyNominationOpen(e.election_id); push('Nomination notifications sent','success'); }} className="text-blue-600">Notify Nomination</button>
+                          <button onClick={async()=>{ await notifyVotingOpen(e.election_id); push('Voting notifications sent','success'); }} className="text-blue-600">Notify Voting</button>
+                          <button onClick={async()=>{ if(!canPublish) return; await publishElection(e.election_id); push('Results published','success'); load(); }} disabled={!canPublish} className="text-green-700 disabled:opacity-50" title={!canPublish? 'Cannot publish before voting ends' : ''}>Publish</button>
+                        </>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}

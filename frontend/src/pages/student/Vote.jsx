@@ -16,6 +16,7 @@ export default function VotePage(){
 	const [policy, setPolicy] = useState(null);
 	const [showPolicy, setShowPolicy] = useState(false);
 	const [accepted, setAccepted] = useState(false);
+  const [alreadyVoted, setAlreadyVoted] = useState(false);
 
 	useEffect(()=>{
 		(async () => {
@@ -38,7 +39,9 @@ export default function VotePage(){
 			setToken(res.token);
 			setMsg('Token issued. You can now cast your vote.');
 		} catch (e) {
-			setErr(e.response?.data?.error || 'Failed to get token');
+			const apiErr = e.response?.data?.error || 'Failed to get token';
+			setErr(apiErr);
+			if (apiErr.toLowerCase().includes('already voted')) setAlreadyVoted(true);
 		}
 	};
 
@@ -53,8 +56,11 @@ export default function VotePage(){
 			const res = await castVote({ token, candidate_id: selected, election_id: election.election_id });
 			setMsg(res?.message || 'Your vote was recorded');
 			setToken('');
+			setAlreadyVoted(true);
 		} catch (e) {
-			setErr(e.response?.data?.error || 'Failed to cast vote');
+			const apiErr = e.response?.data?.error || 'Failed to cast vote';
+			setErr(apiErr);
+			if (apiErr.toLowerCase().includes('already voted')) setAlreadyVoted(true);
 		} finally {
 			setLoading(false);
 		}
@@ -70,7 +76,7 @@ export default function VotePage(){
 				{election && (
 					<div className="bg-white p-4 rounded shadow mb-4">
 						<div className="mb-2"><strong>Election ID:</strong> {election.election_id}</div>
-						<button onClick={getToken} className="bg-indigo-600 text-white px-3 py-1 rounded">Get Token</button>
+						<button onClick={getToken} disabled={alreadyVoted} className="bg-indigo-600 text-white px-3 py-1 rounded disabled:opacity-60">{alreadyVoted? 'Already Voted' : 'Get Token'}</button>
 					</div>
 				)}
 				<div className="grid md:grid-cols-2 gap-3">
@@ -83,7 +89,7 @@ export default function VotePage(){
 					))}
 				</div>
 				<div className="mt-4">
-					<button onClick={vote} disabled={loading || !selected || !token} className="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-60">{loading? 'Submitting...' : 'Submit Vote'}</button>
+					<button onClick={vote} disabled={alreadyVoted || loading || !selected || !token} className="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-60">{alreadyVoted? 'Vote Submitted' : (loading? 'Submitting...' : 'Submit Vote')}</button>
 				</div>
 
 					{showPolicy && policy && (

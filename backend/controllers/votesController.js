@@ -19,7 +19,7 @@ exports.getOrCreateTokenForStudent = async (req, res) => {
     if (!eRows.length) return res.status(404).json({ error: 'Election not found' });
     const election = eRows[0];
     const now = new Date();
-    if (now < new Date(election.voting_start) || now > new Date(election.voting_end)) {
+    if (now < new Date(election.voting_start) || now > new Date(election.voting_end) || !election.is_active) {
       return res.status(400).json({ error: 'Voting not open' });
     }
 
