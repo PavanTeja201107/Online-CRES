@@ -43,6 +43,24 @@ exports.listByElection = async (req, res) => {
   }
 };
 
+// list only approved nominations for a given election (for voting UI)
+exports.listApprovedByElection = async (req, res) => {
+  const electionId = req.params.electionId;
+  try {
+    const [rows] = await pool.query(
+      `SELECT n.nomination_id, n.election_id, n.student_id, n.manifesto, n.photo_url, s.name
+       FROM Nomination n
+       JOIN Student s ON s.student_id = n.student_id
+       WHERE n.election_id = ? AND n.status = 'APPROVED'`,
+      [electionId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('listApprovedByElection error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 exports.approveNomination = async (req, res) => {
   const id = req.params.id;
   try {

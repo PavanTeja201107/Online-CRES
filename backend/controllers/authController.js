@@ -1,4 +1,4 @@
-// controllers/authController.js
+
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -82,8 +82,8 @@ exports.login = async (req, res) => {
     await transporter.sendMail({
       from: process.env.OTP_EMAIL_FROM,
       to: user.email,
-      subject: 'Your CRES login OTP',
-      text: `Your OTP is ${otp}. It expires in 5 minutes.`
+  subject: 'Your Class Representative Election System login OTP',
+  text: `Your OTP is ${otp}. It expires in 5 minutes.`
     });
 
     await logAction(studentId, 'STUDENT', ip, 'OTP_SENT', { email: user.email });
@@ -124,8 +124,12 @@ exports.verifyOtp = async (req, res) => {
     const expiry = new Date(Date.now() + (60 * 60 * 1000));
     await pool.query('INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, NOW(), ?)', [sessionId, studentId, 'STUDENT', expiry]);
 
-    await logAction(studentId, 'STUDENT', ip, 'LOGIN_SUCCESS', {});
-    res.json({ token, userId: studentId, role: 'STUDENT' });
+  // return must_change_password so frontend can prompt change before dashboard
+  const [sRows] = await pool.query('SELECT must_change_password FROM Student WHERE student_id = ?', [studentId]);
+  const mustChange = sRows.length ? !!sRows[0].must_change_password : false;
+
+  await logAction(studentId, 'STUDENT', ip, 'LOGIN_SUCCESS', {});
+  res.json({ token, userId: studentId, role: 'STUDENT', must_change_password: mustChange });
   } catch (err) {
     console.error('verifyOtp error', err);
     await logAction(req.body.studentId || 'UNKNOWN', 'STUDENT', req.ip, 'OTP_VERIFY_ERROR', { error: err.message }, 'FAILURE');
@@ -160,7 +164,7 @@ exports.requestPasswordReset = async (req, res) => {
     await transporter.sendMail({
       from: process.env.OTP_EMAIL_FROM,
       to: user.email,
-      subject: 'CRES Password Reset OTP',
+  subject: 'Class Representative Election System Password Reset OTP',
       text: `Your OTP to reset your password is ${otp}. It expires in 10 minutes.`
     });
 

@@ -24,7 +24,11 @@ export default function VerifyOtp(){
       // backend returns token and maybe role/user
       if (res.token) {
         login(res.token, res.role || 'STUDENT');
-        navigate('/student/dashboard');
+        if (res.must_change_password) {
+          navigate('/student/change-password');
+        } else {
+          navigate('/student/dashboard');
+        }
       } else {
         setErr('No token received');
       }
@@ -44,11 +48,15 @@ export default function VerifyOtp(){
           <h2 className="text-xl font-semibold mb-4 text-indigo-700">Verify OTP</h2>
           <p className="text-sm mb-3">OTP was sent to the email linked to student ID <strong>{studentId || '...'}</strong></p>
           {!state?.studentId && (
-            <input value={studentIdInput} onChange={e=>setStudentIdInput(e.target.value)} placeholder="Student ID (if not auto-filled)" className="border p-2 w-full mb-3" />
+            <label className="block text-sm mb-2">Student ID <span className="text-red-600">*</span>
+              <input value={studentIdInput} onChange={e=>setStudentIdInput(e.target.value)} placeholder="Student ID (if not auto-filled)" className="border p-2 w-full mb-3" required />
+            </label>
           )}
           {err && <p className="text-red-600 mb-2">{err}</p>}
-          <input value={otp} onChange={e=>setOtp(e.target.value)} placeholder="Enter OTP" className="border p-2 w-full mb-4" />
-          <button disabled={loading} className="bg-indigo-600 text-white w-full py-2 rounded disabled:opacity-60">{loading ? 'Verifying...' : 'Verify'}</button>
+          <label className="block text-sm mb-2">OTP <span className="text-red-600">*</span>
+            <input value={otp} onChange={e=>setOtp(e.target.value)} placeholder="Enter OTP" className="border p-2 w-full mb-4" required />
+          </label>
+          <button disabled={loading || !otp || (!state?.studentId && !studentIdInput)} className="bg-indigo-600 text-white w-full py-2 rounded disabled:opacity-60">{loading ? 'Verifying...' : 'Verify'}</button>
         </form>
       </div>
     </div>
