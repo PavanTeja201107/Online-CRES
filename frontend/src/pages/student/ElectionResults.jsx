@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyElections } from '../../api/electionApi';
 import { getResults } from '../../api/voteApi';
+import Select from '../../components/ui/Select';
+import Alert from '../../components/ui/Alert';
 
 export default function ResultsPage(){
 	const [electionId, setElectionId] = useState('');
@@ -53,16 +55,15 @@ export default function ResultsPage(){
 			<div className="container mx-auto px-6 py-8">
 				<h1 className="text-2xl font-semibold mb-4">Results</h1>
 				<div className="mb-4">
-					<label className="block text-sm font-medium mb-1">Select Election</label>
-					<select value={electionId} onChange={e=>setElectionId(e.target.value)} className="border rounded px-3 py-2">
+					<Select label="Select Election" value={electionId} onChange={e=>setElectionId(e.target.value)}>
 						<option value="">-- Choose --</option>
 						{(elections||[]).filter(e => e.is_published).map(e => (
 							<option key={e.election_id} value={e.election_id}>Election #{e.election_id} — Voting ended {new Date(e.voting_end).toLocaleString()}</option>
 						))}
-					</select>
+					</Select>
 				</div>
 				{err && <div className="text-red-600 mb-2">{err}</div>}
-				{message && <div className="mb-3 p-3 rounded bg-yellow-50 text-yellow-800 text-sm">{message}</div>}
+				{message && <Alert kind="warning" className="mb-3">{message}</Alert>}
 				<div className="bg-white rounded shadow">
 					{results.map(r => (
 						<div key={r.candidate_id} className="p-3 border-b flex items-center gap-4">

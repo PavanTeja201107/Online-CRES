@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getMyActiveElection, getMyElections } from '../../api/electionApi';
 import Navbar from '../../components/Navbar';
+import Badge from '../../components/ui/Badge';
 
 export default function StudentElections(){
 	const [activeElection, setActiveElection] = useState(null);
@@ -34,7 +35,7 @@ export default function StudentElections(){
 						<h2 className="font-semibold mb-2">Current Election</h2>
 						<div className="text-sm text-gray-700"><strong>Nomination:</strong> {new Date(activeElection.nomination_start).toLocaleString()} - {new Date(activeElection.nomination_end).toLocaleString()}</div>
 						<div className="text-sm text-gray-700"><strong>Voting:</strong> {new Date(activeElection.voting_start).toLocaleString()} - {new Date(activeElection.voting_end).toLocaleString()}</div>
-						<div className="mt-2"><span className="px-2 py-1 rounded text-white bg-emerald-600 text-xs">Active</span></div>
+						<div className="mt-2"><Badge color="emerald">Active</Badge></div>
 					</div>
 				)}
 
@@ -62,7 +63,7 @@ export default function StudentElections(){
 											<div className="text-gray-600">Voting: {new Date(e.voting_start).toLocaleString()} - {new Date(e.voting_end).toLocaleString()}</div>
 										</div>
 										<div className="mt-2 sm:mt-0">
-											<span className={`px-2 py-1 rounded text-white text-xs ${badge}`}>{status}</span>
+											<Badge color={badge.includes('blue')?'blue': badge.includes('emerald')?'emerald': badge.includes('orange')?'orange':'gray'}>{status}</Badge>
 										</div>
 									</li>
 								);

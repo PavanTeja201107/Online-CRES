@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getElections, createElection, updateElection, activateElection, publishElection, publishElectionsBulk, notifyVotingOpen, notifyNominationOpen } from '../../api/electionApi';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import { useToast } from '../../components/ui/ToastProvider';
 
 export default function AdminElections(){
   const [elections, setElections] = useState([]);
   const [form, setForm] = useState({ class_id:'', nomination_start:'', nomination_end:'', voting_start:'', voting_end:'' });
   const [selected, setSelected] = useState([]);
   const [msg, setMsg] = useState('');
+  const { push } = useToast();
   const [err, setErr] = useState('');
 
   const load = async ()=>{
@@ -39,22 +43,12 @@ export default function AdminElections(){
         {msg && <div className="text-green-600 mb-2">{msg}</div>}
 
         <form onSubmit={submit} className="bg-white p-4 rounded shadow grid md:grid-cols-2 gap-3 mb-6">
-          <label className="text-sm">Class ID <span className="text-red-600">*</span>
-            <input placeholder="Class ID" value={form.class_id} onChange={e=>setForm({...form, class_id:e.target.value})} className="border p-2 w-full mt-1" required />
-          </label>
-          <label className="text-sm">Nomination start <span className="text-red-600">*</span>
-            <input type="datetime-local" value={form.nomination_start} onChange={e=>setForm({...form, nomination_start:e.target.value})} className="border p-2 w-full mt-1" required />
-          </label>
-          <label className="text-sm">Nomination end <span className="text-red-600">*</span>
-            <input type="datetime-local" value={form.nomination_end} onChange={e=>setForm({...form, nomination_end:e.target.value})} className="border p-2 w-full mt-1" required />
-          </label>
-          <label className="text-sm">Voting start <span className="text-red-600">*</span>
-            <input type="datetime-local" value={form.voting_start} onChange={e=>setForm({...form, voting_start:e.target.value})} className="border p-2 w-full mt-1" required />
-          </label>
-          <label className="text-sm">Voting end <span className="text-red-600">*</span>
-            <input type="datetime-local" value={form.voting_end} onChange={e=>setForm({...form, voting_end:e.target.value})} className="border p-2 w-full mt-1" required />
-          </label>
-          <button disabled={!form.class_id || !form.nomination_start || !form.nomination_end || !form.voting_start || !form.voting_end} className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60">Create</button>
+          <Input label="Class ID" required placeholder="Class ID" value={form.class_id} onChange={e=>setForm({...form, class_id:e.target.value})} />
+          <Input label="Nomination start" required type="datetime-local" value={form.nomination_start} onChange={e=>setForm({...form, nomination_start:e.target.value})} />
+          <Input label="Nomination end" required type="datetime-local" value={form.nomination_end} onChange={e=>setForm({...form, nomination_end:e.target.value})} />
+          <Input label="Voting start" required type="datetime-local" value={form.voting_start} onChange={e=>setForm({...form, voting_start:e.target.value})} />
+          <Input label="Voting end" required type="datetime-local" value={form.voting_end} onChange={e=>setForm({...form, voting_end:e.target.value})} />
+          <Button disabled={!form.class_id || !form.nomination_start || !form.nomination_end || !form.voting_start || !form.voting_end}>Create</Button>
         </form>
 
         <div className="bg-white rounded shadow overflow-auto">
@@ -82,10 +76,10 @@ export default function AdminElections(){
                   <td className="p-2">{e.is_active ? 'Yes' : 'No'}</td>
                   <td className="p-2">{e.is_published ? 'Yes' : 'No'}</td>
                   <td className="p-2 flex gap-2">
-                    <button onClick={async()=>{ await activateElection(e.election_id); load(); }} className="text-indigo-600">Activate</button>
-                    <button onClick={async()=>{ await notifyNominationOpen(e.election_id); }} className="text-blue-600">Notify Nomination</button>
-                    <button onClick={async()=>{ await notifyVotingOpen(e.election_id); }} className="text-blue-600">Notify Voting</button>
-                    <button onClick={async()=>{ await publishElection(e.election_id); load(); }} className="text-green-700">Publish</button>
+                    <button onClick={async()=>{ await activateElection(e.election_id); push('Election activated','success'); load(); }} className="text-indigo-600">Activate</button>
+                    <button onClick={async()=>{ await notifyNominationOpen(e.election_id); push('Nomination notifications sent','success'); }} className="text-blue-600">Notify Nomination</button>
+                    <button onClick={async()=>{ await notifyVotingOpen(e.election_id); push('Voting notifications sent','success'); }} className="text-blue-600">Notify Voting</button>
+                    <button onClick={async()=>{ await publishElection(e.election_id); push('Results published','success'); load(); }} className="text-green-700">Publish</button>
                   </td>
                 </tr>
               ))}
