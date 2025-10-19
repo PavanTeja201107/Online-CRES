@@ -29,7 +29,8 @@ export default function StudentArea(){
   return (
     <Routes>
   <Route path="login" element={<GuestRoute><StudentLogin/></GuestRoute>} />
-  <Route path="verify-otp" element={<GuestRoute><VerifyOtp/></GuestRoute>} />
+  {/** Do NOT use GuestRoute here: after OTP verification we log the user in, and GuestRoute would redirect to dashboard before we can route to change-password */}
+  <Route path="verify-otp" element={<VerifyOtp/>} />
       <Route path="change-password" element={<ProtectedRoute role="STUDENT"><ChangePassword/></ProtectedRoute>} />
   <Route path="reset-password" element={<GuestRoute><ResetPassword/></GuestRoute>} />
       <Route path="dashboard" element={<ProtectedRoute role="STUDENT"><StudentDashboard/></ProtectedRoute>} />
