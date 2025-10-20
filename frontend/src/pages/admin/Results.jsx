@@ -29,20 +29,30 @@ ChartJS.register(
 export default function AdminResults() {
   const [electionId, setElectionId] = useState('');
   const [results, setResults] = useState([]);
+  const [summary, setSummary] = useState({ totalEligible: 0, votedCount: 0, notVotedCount: 0 });
   const [err, setErr] = useState('');
   const [electionsList, setElectionsList] = useState([]);
 
   const load = async (id) => {
     if (!id) {
       setResults([]);
+      setSummary({ totalEligible: 0, votedCount: 0, notVotedCount: 0 });
       return;
     }
     try {
       setErr('');
       const data = await getResults(id);
-      setResults(data);
+      // Admin API now returns { candidates, summary }
+      if (Array.isArray(data)) {
+        setResults(data);
+        setSummary({ totalEligible: 0, votedCount: 0, notVotedCount: 0 });
+      } else {
+        setResults(data.candidates || []);
+        setSummary(data.summary || { totalEligible: 0, votedCount: 0, notVotedCount: 0 });
+      }
     } catch (e) {
       setResults([]);
+      setSummary({ totalEligible: 0, votedCount: 0, notVotedCount: 0 });
       setErr(e.response?.data?.error || 'Failed to load results');
     }
   };
@@ -156,6 +166,20 @@ export default function AdminResults() {
             {/* --- Detailed Breakdown Column (Right) --- */}
             <div className="md:col-span-2">
               <h2 className="text-xl font-bold mb-3">Detailed Breakdown</h2>
+              <div className="bg-white rounded shadow p-4 mb-4 grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <div className="text-xs text-gray-500">Eligible</div>
+                  <div className="text-lg font-semibold">{summary.totalEligible}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Voted</div>
+                  <div className="text-lg font-semibold text-green-700">{summary.votedCount}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Not Voted</div>
+                  <div className="text-lg font-semibold text-red-700">{summary.notVotedCount}</div>
+                </div>
+              </div>
               <div className="bg-white rounded shadow">
                 {results.map(r => (
                   <div key={r.candidate_id} className="p-3 border-b flex items-center gap-4">

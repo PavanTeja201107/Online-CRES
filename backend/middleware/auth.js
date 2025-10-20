@@ -9,9 +9,9 @@ async function verifyToken(req, res, next) {
   }
   const token = auth.split(' ')[1];
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    // verify session exists and not expired
-    const [rows] = await pool.query('SELECT * FROM Session WHERE session_id = ? AND user_id = ?', [payload.sessionId, payload.userId]);
+  const payload = jwt.verify(token, process.env.JWT_SECRET);
+  // verify session exists, role matches, and not expired
+  const [rows] = await pool.query('SELECT * FROM Session WHERE session_id = ? AND user_id = ? AND role = ?', [payload.sessionId, payload.userId, payload.role]);
     if (!rows.length) return res.status(401).json({ error: 'Invalid session' });
     const session = rows[0];
     if (new Date(session.expiry_time) < new Date()) {

@@ -5,7 +5,7 @@ import Select from '../../components/ui/Select';
 
 export default function AdminStudents(){
   const [students, setStudents] = useState([]);
-  const [form, setForm] = useState({ student_id:'', name:'', email:'', date_of_birth:'', class_id:'' });
+  const [form, setForm] = useState({ name:'', email:'', date_of_birth:'', class_id:'' });
   const [err, setErr] = useState('');
   const [classes, setClasses] = useState([]);
   const [msg, setMsg] = useState('');
@@ -17,7 +17,14 @@ export default function AdminStudents(){
       setStudents(data);
     } catch (e){ setErr(e.response?.data?.error || 'Failed to load'); }
   };
-  useEffect(()=>{ load(); (async()=>{ try{ const c = await listClasses(); setClasses(c||[]);}catch{} })(); },[]);
+  useEffect(()=>{
+    load();
+    const fetchClasses = async () => { try { const c = await listClasses(); setClasses(c||[]); } catch {} };
+    fetchClasses();
+    const onVisibility = () => { if (!document.hidden) fetchClasses(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  },[]);
 
   const submit = async (e) => {
     e.preventDefault(); setErr(''); setMsg('');
@@ -27,9 +34,16 @@ export default function AdminStudents(){
         setErr('Only Gmail addresses are supported (example@gmail.com)');
         return;
       }
-  const res = await createStudent(form);
-  setMsg(`Student created. Default password: ${res?.defaultPassword || '(generated)'}`);
-  setForm({ student_id:'', name:'', email:'', date_of_birth:'', class_id:'' });
+      // Build payload; backend will auto-generate student_id as classIdXXXX
+      const payload = {
+        name: form.name,
+        email: form.email,
+        date_of_birth: form.date_of_birth,
+        class_id: form.class_id
+      };
+      const res = await createStudent(payload);
+      setMsg(`Student created. ID: ${res?.student_id} | Default password: ${res?.defaultPassword}`);
+      setForm({ name:'', email:'', date_of_birth:'', class_id:'' });
       load();
     } catch (e){ setErr(e.response?.data?.error || 'Failed to create'); }
   };
@@ -43,9 +57,6 @@ export default function AdminStudents(){
         {msg && <div className="text-green-600 mb-2">{msg}</div>}
 
         <form onSubmit={submit} className="bg-white p-4 rounded shadow grid md:grid-cols-2 gap-3 mb-6">
-          <label className="text-sm">Student ID <span className="text-red-600">*</span>
-            <input placeholder="Student ID" value={form.student_id} onChange={e=>setForm({...form, student_id:e.target.value})} className="border p-2 w-full mt-1" required />
-          </label>
           <label className="text-sm">Name <span className="text-red-600">*</span>
             <input placeholder="Name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="border p-2 w-full mt-1" required />
           </label>
@@ -61,8 +72,8 @@ export default function AdminStudents(){
               <option key={c.class_id} value={c.class_id}>{c.class_id} - {c.class_name || 'Class'}</option>
             ))}
           </Select>
-          <div className="text-xs text-gray-600 md:col-span-2">Default password rule: ddmmyyyynnnn (first 4 of ID). Shown after creation.</div>
-          <button disabled={!form.student_id || !form.name || !form.email || !form.date_of_birth || !form.class_id} className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60">Create</button>
+          <div className="text-xs text-gray-600 md:col-span-2">Default password rule: <strong>ddmmyyyy</strong>. Student ID will be automatically generated in the format <strong>classId_XXXX</strong>.</div>
+          <button disabled={!form.name || !form.email || !form.date_of_birth || !form.class_id} className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60">Create</button>
         </form>
 
         <div className="bg-white rounded shadow overflow-auto">

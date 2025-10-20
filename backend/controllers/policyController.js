@@ -23,6 +23,17 @@ exports.listPolicies = async (req, res) => {
   }
 };
 
+exports.getPolicyById = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const [[row]] = await pool.query('SELECT * FROM Policy WHERE policy_id = ? LIMIT 1', [id]);
+    if (!row) return res.status(404).json({ error: 'Policy not found' });
+    res.json(row);
+  } catch (err) {
+    console.error('getPolicyById error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 exports.acceptPolicy = async (req, res) => {
   try {

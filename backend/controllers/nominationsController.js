@@ -24,11 +24,9 @@ exports.submitNomination = async (req, res) => {
     const [exists] = await pool.query('SELECT 1 FROM Nomination WHERE student_id = ? AND election_id = ? LIMIT 1', [studentId, election_id]);
     if (exists.length) return res.status(400).json({ error: 'You have already submitted a nomination for this election' });
 
-    // ensure policy accepted (fetch latest policy id)
-    const [policyRows] = await pool.query('SELECT * FROM Policy ORDER BY version DESC LIMIT 1');
-    if (policyRows.length) {
-      const policyId = policyRows[0].policy_id;
-      const [accepted] = await pool.query('SELECT * FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ?', [studentId, policyId]);
+    // ensure policy accepted for nomination (mandatory if election defines it)
+    if (e.nomination_policy_id) {
+      const [accepted] = await pool.query('SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? LIMIT 1', [studentId, e.nomination_policy_id]);
       if (!accepted.length) return res.status(403).json({ error: 'Policy must be accepted before nomination' });
     }
 
@@ -87,7 +85,14 @@ exports.getMyNomination = async (req, res) => {
 exports.approveNomination = async (req, res) => {
   const id = req.params.id;
   try {
-    await pool.query('UPDATE Nomination SET status = ?, reviewed_by_admin_id = ?, reviewed_at = NOW() WHERE nomination_id = ?', ['APPROVED', req.user.id, id]);
+    // Only allow transition from PENDING -> APPROVED
+    const [result] = await pool.query(
+      "UPDATE Nomination SET status = 'APPROVED', reviewed_by_admin_id = ?, reviewed_at = NOW() WHERE nomination_id = ? AND status = 'PENDING'",
+      [req.user.id, id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ error: 'Decision already made' });
+    }
     await logAction(req.user.id, req.user.role, req.ip, 'NOMINATION_APPROVE', { nomination_id: id });
     res.json({ message: 'Nomination approved' });
   } catch (err) {
@@ -100,7 +105,14 @@ exports.rejectNomination = async (req, res) => {
   const id = req.params.id;
   const { reason } = req.body;
   try {
-    await pool.query('UPDATE Nomination SET status = ?, reviewed_by_admin_id = ?, reviewed_at = NOW(), rejection_reason = ? WHERE nomination_id = ?', ['REJECTED', req.user.id, reason, id]);
+    // Only allow transition from PENDING -> REJECTED
+    const [result] = await pool.query(
+      "UPDATE Nomination SET status = 'REJECTED', reviewed_by_admin_id = ?, reviewed_at = NOW(), rejection_reason = ? WHERE nomination_id = ? AND status = 'PENDING'",
+      [req.user.id, reason || null, id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ error: 'Decision already made' });
+    }
     await logAction(req.user.id, req.user.role, req.ip, 'NOMINATION_REJECT', { nomination_id: id, reason });
     res.json({ message: 'Nomination rejected' });
   } catch (err) {

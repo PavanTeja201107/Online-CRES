@@ -67,13 +67,87 @@ exports.createClass = async (req, res) => {
 exports.deleteClass = async (req, res) => {
   try {
     const id = req.params.id;
-    const [students] = await pool.query('SELECT COUNT(*) AS cnt FROM Student WHERE class_id = ?', [id]);
-    if (students[0].cnt > 0)
-      return res.status(400).json({ error: 'Cannot delete class with students' });
+    const force = String(req.query.force || '').toLowerCase() === 'true' || req.query.force === '1';
 
-    await pool.query('DELETE FROM Class WHERE class_id = ?', [id]);
-    await logAction(req.user.id, req.user.role, req.ip, 'CLASS_DELETED', { class_id: id });
-    res.json({ message: 'Class deleted successfully' });
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      const [studentsRows] = await conn.query('SELECT student_id, email, name FROM Student WHERE class_id = ?', [id]);
+      const studentsCount = studentsRows.length;
+
+      if (studentsCount > 0 && !force) {
+        await conn.rollback();
+        conn.release();
+        return res.status(400).json({
+          error: 'Class has enrolled students. Re-run with force=true to delete class, its students, and all related elections, nominations and votes. Notifications will be sent to enrolled students.'
+        });
+      }
+
+      const studentIds = studentsRows.map(s => s.student_id);
+
+      // Pre-clean tables that do not have FK cascades to Student
+      if (studentIds.length) {
+        const placeholders = studentIds.map(() => '?').join(',');
+        await conn.query(`DELETE FROM PolicyAcceptance WHERE user_role='STUDENT' AND user_id IN (${placeholders})`, studentIds);
+        await conn.query(`DELETE FROM Session WHERE role='STUDENT' AND user_id IN (${placeholders})`, studentIds);
+        await conn.query(`DELETE FROM OTP WHERE user_role='STUDENT' AND user_id IN (${placeholders})`, studentIds);
+      }
+
+      // Deleting the class will CASCADE to Student, Election, Nomination, VotingToken, VoterStatus, VoteAnonymous as per schema
+      const [delRes] = await conn.query('DELETE FROM Class WHERE class_id = ?', [id]);
+      if (delRes.affectedRows === 0) {
+        await conn.rollback();
+        conn.release();
+        return res.status(404).json({ error: 'Class not found' });
+      }
+
+      await logAction(req.user.id, req.user.role, req.ip, 'CLASS_DELETED', { class_id: id, force, students_removed: studentsCount });
+      await conn.commit();
+      conn.release();
+
+      // Notify affected students by email (best-effort, outside transaction)
+      try {
+        if (studentsRows.length) {
+          const host = process.env.SMTP_HOST;
+          const port = parseInt(process.env.SMTP_PORT || '587');
+          const user = process.env.SMTP_USER; const pass = process.env.SMTP_PASS;
+          if (host && user && pass) {
+            const transporter = require('nodemailer').createTransport({ host, port, secure: false, auth: { user, pass } });
+            for (const s of studentsRows) {
+              if (!s.email) continue;
+              const text = [
+                `Dear ${s.name || s.student_id},`,
+                '',
+                `We are informing you that your class (ID: ${id}) has been removed from the Class Representative Election System by an administrator.`,
+                'As part of this action, all dependent data associated with the class has been deleted, including:',
+                '- Student accounts for this class',
+                '- Elections, nominations and voting records for this class',
+                '',
+                'If this was unexpected, please contact the administration team.',
+                '',
+                'Regards,',
+                'Election Committee'
+              ].join('\n');
+              await transporter.sendMail({
+                from: process.env.OTP_EMAIL_FROM,
+                to: s.email,
+                subject: 'Notice: Class removed from the Election System',
+                text
+              });
+            }
+          }
+        }
+      } catch (mailErr) {
+        console.error('deleteClass notification email error:', mailErr && mailErr.message ? mailErr.message : mailErr);
+      }
+
+      res.json({ message: 'Class deleted successfully', studentsRemoved: studentsCount, force });
+    } catch (err) {
+      try { await conn.rollback(); } catch (_) {}
+      conn.release();
+      throw err;
+    }
   } catch (err) {
     console.error('deleteClass error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -107,9 +181,10 @@ exports.getStudent = async (req, res) => {
 
 exports.createStudent = async (req, res) => {
   try {
-    const { student_id, name, email, date_of_birth, class_id } = req.body;
-    if (!student_id || !name || !email || !date_of_birth || !class_id)
+    const { name, email, date_of_birth, class_id } = req.body;
+    if (!name || !email || !date_of_birth || !class_id) {
       return res.status(400).json({ error: 'Missing fields' });
+    }
 
     // Gmail-only email enforcement
     const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
@@ -117,26 +192,84 @@ exports.createStudent = async (req, res) => {
       return res.status(400).json({ error: 'Only Gmail addresses are supported (example@gmail.com)' });
     }
 
-    // Default password rule: ddmmyyyynnnn (nnnn = first 4 digits of student_id), all lowercase
-    // date_of_birth expected format: YYYY-MM-DD
+  // Validate DOB format
     const [yyyy, mm, dd] = (date_of_birth || '').split('-');
     if (!yyyy || !mm || !dd) return res.status(400).json({ error: 'Invalid date_of_birth format (YYYY-MM-DD)' });
-    const idFirst4 = String(student_id).slice(0,4);
-    const defaultPassword = `${dd}${mm}${yyyy}${idFirst4}`.toLowerCase();
-    const hash = await bcrypt.hash(defaultPassword, 10);
-    await pool.query(
-      'INSERT INTO Student (student_id, name, email, date_of_birth, class_id, password_hash, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [student_id, name, email, date_of_birth, class_id, hash, true]
-    );
-    await logAction(req.user.id, req.user.role, req.ip, 'STUDENT_CREATED', { student_id });
-    // Attempt to send welcome email with credentials
+
+    // Always auto-generate student_id in the format: classId + 4-digit sequence (classIdXXXX)
+    const conn = await pool.getConnection();
+    let student_id;
+    let defaultPassword;
+    try {
+      await conn.beginTransaction();
+
+      // Ensure class exists for clearer error (optional but user-friendly)
+      const [classRows] = await conn.query('SELECT 1 FROM Class WHERE class_id = ? LIMIT 1', [class_id]);
+      if (!classRows.length) {
+        await conn.rollback();
+        conn.release();
+        return res.status(400).json({ error: 'Invalid class_id' });
+      }
+
+      // Lock rows for this class to avoid race conditions and find the max suffix used so far
+  const [lastRows] = await conn.query('SELECT student_id FROM Student WHERE class_id = ? ORDER BY student_id DESC LIMIT 1 FOR UPDATE', [class_id]);
+      let next = 1;
+      if (lastRows.length) {
+        const lastId = String(lastRows[0].student_id);
+        const prefix = `${class_id}_`;
+        const suffixPart = lastId.startsWith(prefix) ? lastId.slice(prefix.length) : lastId.slice(String(class_id).length + 1);
+        const parsed = parseInt(suffixPart, 10);
+        if (!isNaN(parsed)) next = parsed + 1;
+      }
+
+      let attempts = 0;
+      while (attempts < 50) {
+        const suffix = String(next).padStart(4, '0');
+        student_id = `${class_id}_${suffix}`;
+  // Default password rule: ddmmyyyy
+  defaultPassword = `${dd}${mm}${yyyy}`.toLowerCase();
+        const hash = await bcrypt.hash(defaultPassword, 10);
+        try {
+          await conn.query(
+            'INSERT INTO Student (student_id, name, email, date_of_birth, class_id, password_hash, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [student_id, name, email, date_of_birth, class_id, hash, true]
+          );
+          // success
+          break;
+        } catch (e) {
+          if (e && e.code === 'ER_DUP_ENTRY') {
+            // someone inserted concurrently; try next number
+            next += 1;
+            attempts += 1;
+            continue;
+          }
+          throw e;
+        }
+      }
+
+      if (!student_id) {
+        await conn.rollback();
+        conn.release();
+        return res.status(409).json({ error: 'Failed to generate a unique Student ID. Please retry.' });
+      }
+
+      await logAction(req.user.id, req.user.role, req.ip, 'STUDENT_CREATED', { student_id, auto: true });
+      await conn.commit();
+      conn.release();
+    } catch (txErr) {
+      try { await conn.rollback(); } catch (_) {}
+      conn.release();
+      throw txErr;
+    }
+
+    // Attempt to send welcome email with credentials (best-effort, outside transaction)
     try {
       const host = process.env.SMTP_HOST;
       const port = parseInt(process.env.SMTP_PORT || '587');
       const user = process.env.SMTP_USER; const pass = process.env.SMTP_PASS;
       if (host && user && pass) {
         const transporter = nodemailer.createTransport({ host, port, secure: false, auth: { user, pass } });
-        const subject = 'Welcome to Class Representative Election System';
+  const subject = 'Welcome to Class Representative Election System';
         const lines = [
           `Dear ${name},`,
           '',
@@ -161,9 +294,13 @@ exports.createStudent = async (req, res) => {
     } catch (mailErr) {
       console.error('createStudent welcome email error:', mailErr && mailErr.message ? mailErr.message : mailErr);
     }
-    res.json({ message: 'Student created successfully', defaultPassword });
+
+    res.json({ message: 'Student created successfully', defaultPassword, student_id });
   } catch (err) {
     console.error('createStudent error:', err);
+    if (err && err.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(400).json({ error: 'Invalid class_id' });
+    }
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -205,8 +342,7 @@ exports.deleteStudent = async (req, res) => {
 exports.resetStudentPassword = async (req, res) => {
   try {
     const id = req.params.id;
-    // Reset rule: same as default creation rule if DOB exists; otherwise generate a strong temp and require reset via OTP
-    const [rows] = await pool.query('SELECT date_of_birth FROM Student WHERE student_id = ?', [id]);
+  const [rows] = await pool.query('SELECT date_of_birth, student_id FROM Student WHERE student_id = ?', [id]);
     if (!rows.length) return res.status(404).json({ error: 'Student not found' });
     const dob = rows[0].date_of_birth;
     let tempPassword;
@@ -214,8 +350,7 @@ exports.resetStudentPassword = async (req, res) => {
       const yyyy = String(dob).slice(0,4);
       const mm = String(dob).slice(5,7);
       const dd = String(dob).slice(8,10);
-      const idFirst4 = String(id).slice(0,4);
-      tempPassword = `${dd}${mm}${yyyy}${idFirst4}`.toLowerCase();
+      tempPassword = `${dd}${mm}${yyyy}`.toLowerCase();
     } else {
       // fallback temp
       tempPassword = 'reset' + Math.floor(1000 + Math.random()*9000);

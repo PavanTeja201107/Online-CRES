@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyElections } from '../../api/electionApi';
 import { submitNomination, getMyNomination } from '../../api/nominationApi';
-import { getPolicy, acceptPolicy } from '../../api/policyApi';
+import { getPolicyById, acceptPolicy } from '../../api/policyApi';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 
@@ -23,7 +23,6 @@ export default function NominationForm(){
 			try {
 				const list = await getMyElections();
 				setAllElections(list||[]);
-				try { const p = await getPolicy(); setPolicy(p); } catch {}
 			} catch (error) {
 				setErr(error.response?.data?.error || 'Failed to load elections');
 			}
@@ -33,11 +32,19 @@ export default function NominationForm(){
 			useEffect(()=>{
 			(async ()=>{
 				setMyNomination(null);
+				setPolicy(null);
+				setAccepted(false);
 				if (!election) return;
 				try{
 					const mine = await getMyNomination(election.election_id);
 					setMyNomination(mine);
-				}catch{}
+				}catch{ /* ignore if no nomination yet */ }
+				try{
+					if (election.nomination_policy_id) {
+						const p = await getPolicyById(election.nomination_policy_id);
+						setPolicy(p);
+					}
+				}catch{ /* policy fetch optional */ }
 			})();
 		}, [election]);
 
@@ -61,7 +68,7 @@ export default function NominationForm(){
 			try {
 				if (!election) throw new Error('Select an election where nominations are open');
 				if (myNomination) throw new Error('You have already submitted a nomination for this election');
-      if (policy && !accepted) { setShowPolicy(true); return; }
+	if (policy && !accepted) { setShowPolicy(true); return; }
 			const normalizedUrl = toDirectImageUrl(photoUrl);
 			const res = await submitNomination({ election_id: election.election_id, manifesto, photo_url: normalizedUrl });
 			setMsg(res?.message || 'Nomination submitted');
@@ -139,7 +146,7 @@ export default function NominationForm(){
 	              <div className="h-64 overflow-auto border p-2 whitespace-pre-wrap text-sm mb-3">{policy.policy_text}</div>
 								<div className="flex justify-end gap-2">
 									<Button variant="secondary" onClick={()=>setShowPolicy(false)}>Cancel</Button>
-									<Button onClick={async ()=>{ try{ await acceptPolicy(); setAccepted(true); setShowPolicy(false); setMsg('Policy accepted. Please submit again.'); }catch(e){ setErr(e.response?.data?.error || 'Failed to accept'); } }}>I Accept</Button>
+									<Button onClick={async ()=>{ try{ await acceptPolicy(policy?.policy_id); setAccepted(true); setShowPolicy(false); setMsg('Policy accepted. Please submit again.'); }catch(e){ setErr(e.response?.data?.error || 'Failed to accept'); } }}>I Accept</Button>
 								</div>
 	            </div>
 	          </div>

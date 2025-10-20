@@ -67,7 +67,7 @@ export default function StudentLogin() {
                 {loading ? 'Sending...' : 'Send OTP'}
               </button>
               <div className="mt-3 text-right">
-                <a href="/student/reset-password" className="text-sm text-indigo-600">Forgot password?</a>
+                <a href="/student/reset-password?role=student" className="text-sm text-indigo-600">Forgot password?</a>
               </div>
             </form>
           ) : null}

@@ -36,13 +36,13 @@ exports.adminLogin = async (req, res) => {
       return res.status(401).json({ error: 'Invalid admin ID or password' });
     }
 
-    // delete old sessions
-    await pool.query('DELETE FROM Session WHERE user_id = ?', [adminId]);
+  // delete old sessions for this user and role only
+  await pool.query('DELETE FROM Session WHERE user_id = ? AND role = ?', [adminId, 'ADMIN']);
 
     const sessionId = uuidv4();
     const token = jwt.sign({ userId: adminId, role: 'ADMIN', sessionId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1h' });
-    const expiry = new Date(Date.now() + (60 * 60 * 1000));
-    await pool.query('INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, NOW(), ?)', [sessionId, adminId, 'ADMIN', expiry]);
+  const expiry = new Date(Date.now() + (60 * 60 * 1000));
+  await pool.query('INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, UTC_TIMESTAMP(), ?)', [sessionId, adminId, 'ADMIN', expiry]);
 
     await logAction(adminId, 'ADMIN', ip, 'LOGIN_SUCCESS', {});
 
@@ -78,10 +78,10 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // generate OTP
+  // generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = new Date(Date.now() + 5 * 60 * 1000);
-    await pool.query('INSERT INTO OTP (student_id, otp_code, expiry_time, purpose, used) VALUES (?, ?, ?, ?, ?)', [studentId, otp, expiry, 'LOGIN', false]);
+  await pool.query('INSERT INTO OTP (user_id, user_role, otp_code, expiry_time, purpose, used) VALUES (?, ?, ?, ?, ?, ?)', [studentId, 'STUDENT', otp, expiry, 'LOGIN', false]);
 
     // send email
     await transporter.sendMail({
@@ -103,10 +103,10 @@ exports.login = async (req, res) => {
 exports.verifyOtp = async (req, res) => {
   const ip = req.ip;
   try {
-    const { studentId, otp } = req.body;
+  const { studentId, otp } = req.body;
     if (!studentId || !otp) return res.status(400).json({ error: 'Missing fields' });
 
-    const [rows] = await pool.query('SELECT * FROM OTP WHERE student_id = ? AND otp_code = ? AND used = FALSE ORDER BY created_at DESC LIMIT 1', [studentId, otp]);
+  const [rows] = await pool.query("SELECT * FROM OTP WHERE user_id = ? AND user_role = 'STUDENT' AND otp_code = ? AND purpose = 'LOGIN' AND used = FALSE ORDER BY created_at DESC LIMIT 1", [studentId, otp]);
     if (!rows.length) {
       await logAction(studentId, 'STUDENT', ip, 'OTP_VERIFY', { reason: 'not_found' }, 'FAILURE');
       return res.status(400).json({ error: 'Invalid or expired OTP' });
@@ -121,13 +121,13 @@ exports.verifyOtp = async (req, res) => {
     // mark used
     await pool.query('UPDATE OTP SET used = TRUE WHERE otp_id = ?', [record.otp_id]);
 
-    // delete old sessions for student
-    await pool.query('DELETE FROM Session WHERE user_id = ?', [studentId]);
+  // delete old sessions for this student role only
+  await pool.query('DELETE FROM Session WHERE user_id = ? AND role = ?', [studentId, 'STUDENT']);
 
     const sessionId = uuidv4();
     const token = jwt.sign({ userId: studentId, role: 'STUDENT', sessionId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1h' });
-    const expiry = new Date(Date.now() + (60 * 60 * 1000));
-    await pool.query('INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, NOW(), ?)', [sessionId, studentId, 'STUDENT', expiry]);
+  const expiry = new Date(Date.now() + (60 * 60 * 1000));
+  await pool.query('INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, UTC_TIMESTAMP(), ?)', [sessionId, studentId, 'STUDENT', expiry]);
 
   // return must_change_password so frontend can prompt change before dashboard
   const [sRows] = await pool.query('SELECT must_change_password FROM Student WHERE student_id = ?', [studentId]);
@@ -145,7 +145,7 @@ exports.verifyOtp = async (req, res) => {
 exports.requestPasswordReset = async (req, res) => {
   const ip = req.ip;
   try {
-    const { userId } = req.body;
+  const { userId } = req.body;
     if (!userId) return res.status(400).json({ error: 'User ID required' });
 
     // detect role
@@ -163,8 +163,9 @@ exports.requestPasswordReset = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = new Date(Date.now() + 10 * 60 * 1000);
-    await pool.query('INSERT INTO OTP (student_id, otp_code, expiry_time, purpose, used) VALUES (?, ?, ?, ?, ?)', [
+    await pool.query('INSERT INTO OTP (user_id, user_role, otp_code, expiry_time, purpose, used) VALUES (?, ?, ?, ?, ?, ?)', [
       userId,
+      role,
       otp,
       expiry,
       'RESET',
@@ -193,9 +194,15 @@ exports.resetPassword = async (req, res) => {
     const { userId, otp, newPassword } = req.body;
     if (!userId || !otp || !newPassword) return res.status(400).json({ error: 'Missing fields' });
 
+    // Determine role to disambiguate OTP owner
+    const [studentRowsRole] = await pool.query('SELECT 1 FROM Student WHERE student_id = ? LIMIT 1', [userId]);
+    const [adminRowsRole] = await pool.query('SELECT 1 FROM Admin WHERE admin_id = ? LIMIT 1', [userId]);
+    const roleForOtp = studentRowsRole.length ? 'STUDENT' : adminRowsRole.length ? 'ADMIN' : null;
+    if (!roleForOtp) return res.status(404).json({ error: 'User not found' });
+
     const [rows] = await pool.query(
-      'SELECT * FROM OTP WHERE student_id = ? AND otp_code = ? AND purpose = ? AND used = FALSE ORDER BY created_at DESC LIMIT 1',
-      [userId, otp, 'RESET']
+      "SELECT * FROM OTP WHERE user_id = ? AND user_role = ? AND otp_code = ? AND purpose = 'RESET' AND used = FALSE ORDER BY created_at DESC LIMIT 1",
+      [userId, roleForOtp, otp]
     );
     if (!rows.length) return res.status(400).json({ error: 'Invalid or expired OTP' });
 
@@ -205,11 +212,11 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ error: 'OTP expired' });
     }
 
-    const [studentRows] = await pool.query('SELECT * FROM Student WHERE student_id = ?', [userId]);
-    const [adminRows] = await pool.query('SELECT * FROM Admin WHERE admin_id = ?', [userId]);
-    const table = studentRows.length ? 'Student' : adminRows.length ? 'Admin' : null;
-    const idField = studentRows.length ? 'student_id' : adminRows.length ? 'admin_id' : null;
-    const role = studentRows.length ? 'STUDENT' : 'ADMIN';
+  const [studentRows] = await pool.query('SELECT * FROM Student WHERE student_id = ?', [userId]);
+  const [adminRows] = await pool.query('SELECT * FROM Admin WHERE admin_id = ?', [userId]);
+  const table = studentRows.length ? 'Student' : adminRows.length ? 'Admin' : null;
+  const idField = studentRows.length ? 'student_id' : adminRows.length ? 'admin_id' : null;
+  const role = studentRows.length ? 'STUDENT' : 'ADMIN';
 
     if (!table) return res.status(404).json({ error: 'User not found' });
 

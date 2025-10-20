@@ -59,13 +59,15 @@ CREATE TABLE Nomination (
 
 CREATE TABLE OTP (
   otp_id INT AUTO_INCREMENT PRIMARY KEY,
-  student_id VARCHAR(20) NOT NULL,
+  user_id VARCHAR(20) NOT NULL,
+  user_role ENUM('ADMIN','STUDENT') NOT NULL,
   otp_code VARCHAR(10) NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   expiry_time DATETIME NOT NULL,
   purpose ENUM('LOGIN','RESET') DEFAULT 'LOGIN',
   used BOOLEAN DEFAULT FALSE,
-  FOREIGN KEY (student_id) REFERENCES Student(student_id) ON DELETE CASCADE ON UPDATE CASCADE
+  INDEX ix_otp_user (user_id, user_role),
+  INDEX ix_otp_purpose (purpose)
 );
 
 CREATE TABLE Policy (

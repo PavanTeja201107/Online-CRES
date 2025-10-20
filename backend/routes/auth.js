@@ -7,8 +7,10 @@ const rateLimit = require('express-rate-limit');
 
 const otpLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
-	max: 5,
-	message: { error: 'Too many OTP attempts, try again later' }
+	max: process.env.NODE_ENV === 'production' ? 5 : 50,
+	standardHeaders: true,
+	legacyHeaders: false,
+	handler: (req, res) => res.status(429).json({ error: 'Too many OTP attempts, try again later' })
 });
 
 // validators
@@ -49,7 +51,8 @@ router.post('/login', loginValidator, AuthController.login);              // stu
 router.post('/verify-otp', verifyOtpValidator, otpLimiter, AuthController.verifyOtp);     // verify OTP -> issue JWT + create session
 // Protect change-password: must be authenticated (or change flow should use a one-time token)
 router.post('/change-password', verifyToken, AuthController.changePassword);
-router.post('/request-reset', AuthController.requestPasswordReset);
+// Apply OTP limiter to reset requests as well to prevent abuse
+router.post('/request-reset', otpLimiter, AuthController.requestPasswordReset);
 router.post('/reset-password', resetValidator, otpLimiter, AuthController.resetPassword);
 
 // logout (invalidate session)

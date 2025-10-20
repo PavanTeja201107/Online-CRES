@@ -78,6 +78,9 @@ export default function AdminLogin() {
           <button disabled={loading || !adminId || !password} className="w-full bg-indigo-600 text-white py-2 rounded disabled:opacity-60">
             {loading ? 'Logging in...' : 'Login'}
           </button>
+          <div className="mt-3 text-right">
+            <a href="/admin/reset-password" className="text-sm text-indigo-600">Forgot password?</a>
+          </div>
         </form>
       </div>
     </div>

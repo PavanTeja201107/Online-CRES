@@ -14,6 +14,7 @@ import AdminProfile from './pages/admin/Profile';
 import GuestRoute from './components/GuestRoute';
 import AdminPolicy from './pages/admin/Policy';
 import AuditLogs from './pages/admin/AuditLogs';
+import ResetPassword from './pages/auth/ResetPassword';
 
 function Landing(){
   const token = localStorage.getItem('token');
@@ -56,6 +57,8 @@ export default function App() {
       <Route path="/" element={<Landing />} />
 
   <Route path="/admin/login" element={<GuestRoute><AdminLogin /></GuestRoute>} />
+    {/* Admin reset-password alias so URL looks consistent */}
+    <Route path="/admin/reset-password" element={<GuestRoute><ResetPassword/></GuestRoute>} />
       <Route
         path="/admin/dashboard"
         element={

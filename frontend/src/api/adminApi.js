@@ -3,7 +3,7 @@ import axios from './axiosInstance';
 // Classes
 export const listClasses = () => axios.get('/admin/classes').then(r=>r.data);
 export const createClass = (class_name) => axios.post('/admin/classes', { class_name }).then(r=>r.data);
-export const deleteClass = (id) => axios.delete(`/admin/classes/${id}`).then(r=>r.data);
+export const deleteClass = (id, params = {}) => axios.delete(`/admin/classes/${id}`, { params }).then(r=>r.data);
 
 // Students
 export const listStudents = () => axios.get('/admin/students').then(r=>r.data);

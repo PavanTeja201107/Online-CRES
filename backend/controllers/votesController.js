@@ -72,11 +72,14 @@ exports.castVote = async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    // ensure latest policy accepted (if a policy exists)
-    const [pRows] = await conn.query('SELECT policy_id FROM Policy ORDER BY version DESC LIMIT 1');
-    if (pRows.length) {
-      const latestPolicyId = pRows[0].policy_id;
-      const [pa] = await conn.query('SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? LIMIT 1', [userId, latestPolicyId]);
+    // ensure election specific policy accepted (mandatory if defined)
+    const [policyRow] = await conn.query('SELECT voting_policy_id FROM Election WHERE election_id = ? LIMIT 1', [election_id]);
+    if (!policyRow.length) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Election not found' });
+    }
+    if (policyRow[0].voting_policy_id) {
+      const [pa] = await conn.query('SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? LIMIT 1', [userId, policyRow[0].voting_policy_id]);
       if (!pa.length) {
         await conn.rollback();
         return res.status(403).json({ error: 'Policy must be accepted before voting' });
@@ -144,7 +147,7 @@ exports.castVote = async (req, res) => {
     await conn.commit();
 
     // audit logs: VOTE_CAST (anonymous) and TOKEN_USED
-    await logAction('ANON', 'SYSTEM', ip, 'VOTE_CAST', { election_id, ballot_id }, 'SUCCESS');
+  await logAction('ANON', 'SYSTEM', ip, 'VOTE_CAST', { election_id, ballot_id: ballotId }, 'SUCCESS');
     await logAction('ANON', 'SYSTEM', ip, 'TOKEN_USED', { election_id }, 'SUCCESS');
 
     res.json({ message: 'Vote recorded successfully' });
@@ -171,18 +174,41 @@ exports.getResults = async (req, res) => {
       return res.status(403).json({ error: 'Results not published yet' });
     }
 
-    // Return enriched results with candidate details
-    const [rows] = await pool.query(
-      `SELECT s.student_id AS candidate_id, s.name AS candidate_name, COALESCE(n.photo_url, NULL) AS photo_url, COUNT(*) AS votes
-       FROM VoteAnonymous v
-       JOIN Student s ON s.student_id = v.candidate_id
-       LEFT JOIN Nomination n ON n.student_id = v.candidate_id AND n.election_id = v.election_id
-       WHERE v.election_id = ?
-       GROUP BY s.student_id, s.name, n.photo_url
-       ORDER BY votes DESC`,
+    // Candidates = all approved nominations (include zero-vote candidates)
+    const [candidates] = await pool.query(
+      `SELECT s.student_id AS candidate_id,
+              s.name AS candidate_name,
+              COALESCE(n.photo_url, NULL) AS photo_url,
+              COALESCE(v.votes, 0) AS votes
+       FROM Nomination n
+       JOIN Student s ON s.student_id = n.student_id
+       LEFT JOIN (
+         SELECT candidate_id, COUNT(*) AS votes
+         FROM VoteAnonymous
+         WHERE election_id = ?
+         GROUP BY candidate_id
+       ) v ON v.candidate_id = n.student_id
+       WHERE n.election_id = ? AND n.status = 'APPROVED'
+       ORDER BY votes DESC, candidate_name ASC`,
+      [electionId, electionId]
+    );
+
+    // Summary counts from voter status
+    const [vsAgg] = await pool.query(
+      `SELECT COUNT(*) AS totalEligible,
+              SUM(CASE WHEN has_voted THEN 1 ELSE 0 END) AS votedCount
+       FROM VoterStatus WHERE election_id = ?`,
       [electionId]
     );
-    res.json(rows);
+    const totalEligible = Number(vsAgg[0]?.totalEligible || 0);
+    const votedCount = Number(vsAgg[0]?.votedCount || 0);
+    const notVotedCount = Math.max(0, totalEligible - votedCount);
+
+    // For ADMIN, return richer payload; for others, preserve array-only shape
+    if (req.user?.role === 'ADMIN') {
+      return res.json({ candidates, summary: { totalEligible, votedCount, notVotedCount } });
+    }
+    return res.json(candidates);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

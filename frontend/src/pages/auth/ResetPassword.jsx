@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { requestPasswordReset, resetPassword } from '../../api/studentsApi';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function ResetPassword(){
 	const [userId, setUserId] = useState('');
@@ -10,6 +11,13 @@ export default function ResetPassword(){
 	const [msg, setMsg] = useState('');
 	const [err, setErr] = useState('');
 	const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+	const location = useLocation();
+	const params = new URLSearchParams(location.search);
+	// Prefer role from path when visiting /admin/reset-password, fallback to ?role=admin|student, default to student
+	const roleFromPath = location.pathname.startsWith('/admin/') ? 'admin' : (location.pathname.startsWith('/student/') ? 'student' : null);
+	const roleParam = (roleFromPath || params.get('role') || 'student').toLowerCase();
+	const redirectToAdmin = roleParam === 'admin';
 
 	const requestOtp = async (e) => {
 		e.preventDefault(); setErr(''); setMsg('');
@@ -28,8 +36,15 @@ export default function ResetPassword(){
 		try {
 			setLoading(true);
 			const res = await resetPassword(userId, otp, newPassword);
-			setMsg(res?.message || 'Password reset successful');
+					setMsg(res?.message || 'Password reset successful');
 			setStep(3);
+			// Redirect to appropriate login after a short confirmation
+			setTimeout(() => {
+				try {
+					alert('Password reset successful. Please login with your new password.');
+				} catch {}
+						navigate(redirectToAdmin ? '/admin/login' : '/student/login', { replace: true });
+			}, 600);
 		} catch (error) {
 			setErr(error.response?.data?.error || 'Failed to reset');
 		} finally { setLoading(false); }

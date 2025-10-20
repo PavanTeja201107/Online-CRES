@@ -49,14 +49,25 @@ export default function ResultsPage() {
         })();
     }, []);
 
-    useEffect(() => {
+        useEffect(() => {
         const load = async () => {
             setResults([]); setMessage('');
             if (!electionId) return;
             try {
-                const r = await getResults(electionId);
-                setResults(r || []);
-                if (!r || r.length === 0) {
+                                const r = await getResults(electionId);
+                                const data = Array.isArray(r) ? r : (r?.candidates || []);
+                                const normalize = (url) => {
+                                    try {
+                                        if (!url) return url;
+                                        let m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+                                        if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+                                        m = url.match(/[?&]id=([^&]+)/);
+                                        if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+                                        return url;
+                                    } catch { return url; }
+                                };
+                                setResults((data || []).map(x => ({ ...x, photo_url: normalize(x.photo_url) })));
+                if (!data || data.length === 0) {
                     setMessage('No votes recorded. Faculty advisor and HOD will decide next steps.');
                 } else {
                     const top = Math.max(...r.map(x => x.votes));
