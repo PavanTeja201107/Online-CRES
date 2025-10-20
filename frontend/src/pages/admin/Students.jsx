@@ -27,11 +27,39 @@ export default function AdminStudents(){
         setErr('Only Gmail addresses are supported (example@gmail.com)');
         return;
       }
-  const res = await createStudent(form);
-  setMsg(`Student created. Default password: ${res?.defaultPassword || '(generated)'}`);
-  setForm({ student_id:'', name:'', email:'', date_of_birth:'', class_id:'' });
+
+      // Check for existing student with same ID
+      const existingStudent = students.find(s => s.student_id === form.student_id);
+      if (existingStudent) {
+        setErr('A student with this ID already exists');
+        return;
+      }
+
+      // Check for existing email
+      const existingEmail = students.find(s => s.email === form.email);
+      if (existingEmail) {
+        setErr('A student with this email address already exists');
+        return;
+      }
+
+      const res = await createStudent(form);
+      setMsg(`Student created. Default password: ${res?.defaultPassword || '(generated)'}`);
+      setForm({ student_id:'', name:'', email:'', date_of_birth:'', class_id:'' });
       load();
-    } catch (e){ setErr(e.response?.data?.error || 'Failed to create'); }
+    } catch (e) {
+      // Handle specific duplicate errors from backend
+      if (e.response?.data?.error?.includes('duplicate')) {
+        if (e.response.data.error.toLowerCase().includes('student_id')) {
+          setErr('A student with this ID already exists');
+        } else if (e.response.data.error.toLowerCase().includes('email')) {
+          setErr('A student with this email address already exists');
+        } else {
+          setErr('This student record already exists');
+        }
+      } else {
+        setErr(e.response?.data?.error || 'Failed to create student');
+      }
+    }
   };
 
   return (
@@ -44,13 +72,38 @@ export default function AdminStudents(){
 
         <form onSubmit={submit} className="bg-white p-4 rounded shadow grid md:grid-cols-2 gap-3 mb-6">
           <label className="text-sm">Student ID <span className="text-red-600">*</span>
-            <input placeholder="Student ID" value={form.student_id} onChange={e=>setForm({...form, student_id:e.target.value})} className="border p-2 w-full mt-1" required />
+            <input 
+              placeholder="Student ID" 
+              value={form.student_id} 
+              onChange={e=>setForm({...form, student_id:e.target.value})} 
+              className={`border p-2 w-full mt-1 ${students.some(s => s.student_id === form.student_id) ? 'border-red-500' : ''}`}
+              required 
+            />
+            {students.some(s => s.student_id === form.student_id) && (
+              <div className="text-red-500 text-xs mt-1">This Student ID is already in use</div>
+            )}
           </label>
           <label className="text-sm">Name <span className="text-red-600">*</span>
-            <input placeholder="Name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="border p-2 w-full mt-1" required />
+            <input 
+              placeholder="Name" 
+              value={form.name} 
+              onChange={e=>setForm({...form, name:e.target.value})} 
+              className="border p-2 w-full mt-1" 
+              required 
+            />
           </label>
           <label className="text-sm">Email <span className="text-red-600">*</span>
-            <input placeholder="Email" type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} className="border p-2 w-full mt-1" required />
+            <input 
+              placeholder="Email" 
+              type="email" 
+              value={form.email} 
+              onChange={e=>setForm({...form, email:e.target.value})} 
+              className={`border p-2 w-full mt-1 ${students.some(s => s.email === form.email) ? 'border-red-500' : ''}`}
+              required 
+            />
+            {students.some(s => s.email === form.email) && (
+              <div className="text-red-500 text-xs mt-1">This email address is already registered</div>
+            )}
           </label>
           <label className="text-sm">DOB <span className="text-red-600">*</span>
             <input type="date" placeholder="DOB" value={form.date_of_birth} onChange={e=>setForm({...form, date_of_birth:e.target.value})} className="border p-2 w-full mt-1" required />
