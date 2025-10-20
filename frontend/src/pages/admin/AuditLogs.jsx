@@ -26,6 +26,37 @@ export default function AuditLogs(){
 		}catch(e){ setErr(e.response?.data?.error || 'Failed to load'); }
 	};
 
+	function extractDisplayValue(l) {
+		// prefer explicit meta, then details
+		let raw = l.meta ?? l.details ?? '';
+		// try to parse if it's a JSON string
+		if (typeof raw === 'string') {
+			const s = raw.trim();
+			if ((s.startsWith('{') || s.startsWith('['))) {
+				try { raw = JSON.parse(s); } catch (e) { /* keep as string */ }
+			}
+		}
+
+		// if it's an object, prefer nested meta or details
+		if (raw && typeof raw === 'object') {
+			if (raw.meta !== undefined) return raw.meta;
+			if (raw.details !== undefined) return raw.details;
+		}
+		return raw;
+	}
+
+	function toDisplayString(val) {
+		if (val === null || val === undefined) return '';
+		if (typeof val === 'string') return val;
+		try { return JSON.stringify(val); } catch (e) { return String(val); }
+	}
+
+	function toTitleString(val) {
+		if (val === null || val === undefined) return '';
+		if (typeof val === 'string') return val;
+		try { return JSON.stringify(val, null, 2); } catch (e) { return String(val); }
+	}
+
 	useEffect(()=>{ load(); },[]);
 
 	return (
@@ -55,22 +86,29 @@ export default function AuditLogs(){
 								<th className="p-2">Role</th>
 								<th className="p-2">Action</th>
 								<th className="p-2">Meta</th>
+								<th className="p-2">Outcome</th>
 							</tr>
 						</thead>
 						<tbody>
-							{logs.map(l => (
-								<tr key={l.id || `${l.user_id}-${l.timestamp}-${l.action_type}`} className="border-b">
-									<td className="p-2 whitespace-nowrap">{new Date(l.timestamp).toLocaleString()}</td>
-									<td className="p-2">{l.user_id}</td>
-									<td className="p-2">{l.role}</td>
-									<td className="p-2">{l.action_type}</td>
-									<td className="p-2 max-w-[400px] truncate" title={typeof l.meta === 'string' ? l.meta : JSON.stringify(l.meta)}>
-										{typeof l.meta === 'string' ? l.meta : JSON.stringify(l.meta)}
-									</td>
-								</tr>
-							))}
+							{logs.map(l => {
+								const displayVal = extractDisplayValue(l);
+								const displayStr = toDisplayString(displayVal);
+								const titleStr = toTitleString(displayVal);
+								return (
+									<tr key={l.log_id || `${l.user_id}-${l.timestamp}-${l.action_type}`} className="border-b">
+										<td className="p-2 whitespace-nowrap">{new Date(l.timestamp).toLocaleString()}</td>
+										<td className="p-2">{l.user_id}</td>
+										<td className="p-2">{l.role}</td>
+										<td className="p-2">{l.action_type}</td>
+										<td className="p-2 max-w-[400px] truncate" title={titleStr}>
+											{displayStr}
+										</td>
+										<td className="p-2" title={l.outcome}>{l.outcome}</td>
+									</tr>
+								);
+							})}
 							{!logs.length && (
-								<tr><td className="p-4 text-gray-600" colSpan={5}>No logs.</td></tr>
+								<tr><td className="p-4 text-gray-600" colSpan={6}>No logs.</td></tr>
 							)}
 						</tbody>
 					</table>
