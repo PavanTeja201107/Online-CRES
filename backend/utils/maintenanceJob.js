@@ -19,7 +19,7 @@ async function maintenanceJob() {
     );
     for (const row of toClose) {
       try {
-        await pool.query('UPDATE Election SET is_active = FALSE WHERE election_id = ?', [row.election_id]);
+        await pool.query('UPDATE Election SET is_active = FALSE, is_published = TRUE WHERE election_id = ?', [row.election_id]);
         await pool.query(
           'UPDATE VotingToken SET used = TRUE, used_at = NOW(), student_id = NULL, token_hash = NULL WHERE election_id = ? AND used = FALSE',
           [row.election_id]

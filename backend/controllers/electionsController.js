@@ -31,15 +31,10 @@ exports.createElection = async (req, res) => {
       return res.status(400).json({ error: 'Another election overlaps this timeline for this class. Complete current election before creating a new one.' });
     }
 
-    // get current policies
-    const [nomPolicyRows] = await pool.query("SELECT policy_id FROM Policy WHERE policy_text LIKE '%nomination%' ORDER BY version DESC LIMIT 1");
-    const [votePolicyRows] = await pool.query("SELECT policy_id FROM Policy WHERE policy_text LIKE '%voting%' ORDER BY version DESC LIMIT 1");
-    const nomination_policy_id = nomPolicyRows.length ? nomPolicyRows[0].policy_id : null;
-    const voting_policy_id = votePolicyRows.length ? votePolicyRows[0].policy_id : null;
-
+    // Insert election without policy columns
     const [result] = await pool.query(
-      `INSERT INTO Election (class_id, nomination_start, nomination_end, voting_start, voting_end, nomination_policy_id, voting_policy_id, created_by_admin_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [class_id, nomination_start, nomination_end, voting_start, voting_end, nomination_policy_id, voting_policy_id, req.user.id]
+      `INSERT INTO Election (class_id, nomination_start, nomination_end, voting_start, voting_end, created_by_admin_id) VALUES (?, ?, ?, ?, ?, ?)`,
+      [class_id, nomination_start, nomination_end, voting_start, voting_end, req.user.id]
     );
     // ensure not active by default regardless of DB defaults
     await pool.query('UPDATE Election SET is_active = FALSE, is_published = FALSE WHERE election_id = ?', [result.insertId]);

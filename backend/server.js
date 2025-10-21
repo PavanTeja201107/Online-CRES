@@ -54,7 +54,7 @@ function setupRoutes(app) {
 setupRoutes(app);
 
 const maintenanceJob = require('./utils/maintenanceJob');
-setInterval(maintenanceJob, 1000 * 60);
+setInterval(maintenanceJob, 1000);
 
 
 app.use((err, req, res, next) => {

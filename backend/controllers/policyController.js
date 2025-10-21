@@ -22,8 +22,14 @@ exports.listPolicies = async (req, res) => {
 
 exports.acceptPolicy = async (req, res) => {
   try {
-    const { policy_id } = req.body || {};
-    if (!policy_id) return res.status(400).json({ error: 'policy_id required' });
+    let { policy_id, name } = req.body || {};
+    if (!policy_id && name) {
+      // resolve policy_id by name
+      const [rows] = await pool.query('SELECT policy_id FROM Policy WHERE name = ? LIMIT 1', [name]);
+      if (!rows.length) return res.status(404).json({ error: 'Policy not found' });
+      policy_id = rows[0].policy_id;
+    }
+    if (!policy_id) return res.status(400).json({ error: 'policy_id or name required' });
     await pool.query('INSERT INTO PolicyAcceptance (user_id, policy_id, timestamp) VALUES (?, ?, NOW())', [req.user.id, policy_id]);
     await logAction(req.user.id, req.user.role, req.ip, 'POLICY_ACCEPT', { policy_id });
     res.json({ message: 'Policy accepted successfully' });
