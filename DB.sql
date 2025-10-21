@@ -183,3 +183,19 @@ AFTER password_hash;
 -- Note: Student table already has 'last_login' column
 -- For consistency, you might want to rename it to 'last_login_at' (optional)
 -- ALTER TABLE Student CHANGE COLUMN last_login last_login_at DATETIME DEFAULT NULL;
+
+-- Add rejection_reason to Nomination table (if not exists)
+ALTER TABLE Nomination 
+ADD COLUMN IF NOT EXISTS rejection_reason TEXT NULL;
+
+-- Add is_published to Election table (if not exists)
+ALTER TABLE Election 
+ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE;
+
+-- Add last_login_at to Student table (if not exists)
+ALTER TABLE Student 
+ADD COLUMN IF NOT EXISTS last_login_at DATETIME NULL;
+
+-- Add last_login_at to Admin table (if not exists)
+ALTER TABLE Admin 
+ADD COLUMN IF NOT EXISTS last_login_at DATETIME NULL;
