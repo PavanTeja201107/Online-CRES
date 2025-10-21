@@ -54,9 +54,14 @@ exports.adminLogin = async (req, res) => {
 
     res.json({ 
       message: 'Admin login successful', 
-      token, 
-      admin: { id: admin.admin_id, name: admin.name, email: admin.email },
-      last_login_at: previousLoginAt // Return the PREVIOUS login time
+      token,
+      user: { 
+        id: admin.admin_id, 
+        name: admin.name, 
+        email: admin.email,
+        role: 'ADMIN',
+        last_login_at: previousLoginAt // Return the PREVIOUS login time
+      }
     });
   } catch (err) {
     console.error('Admin login error:', err);
@@ -153,13 +158,15 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ error: 'Expired OTP' });
     }
 
-    // Get student details including current last_login BEFORE updating
-    const [studentRows] = await pool.query('SELECT must_change_password, last_login FROM Student WHERE student_id = ?', [studentId]);
-    const previousLoginAt = studentRows.length ? studentRows[0].last_login : null;
+    // Get student details including current last_login_at BEFORE updating
+    const [studentRows] = await pool.query('SELECT must_change_password, last_login_at, name, class_id FROM Student WHERE student_id = ?', [studentId]);
+    const previousLoginAt = studentRows.length ? studentRows[0].last_login_at : null;
     const mustChange = studentRows.length ? !!studentRows[0].must_change_password : false;
+    const studentName = studentRows.length ? studentRows[0].name : '';
+    const classId = studentRows.length ? studentRows[0].class_id : '';
 
-    // Update last_login to current timestamp (using NOW() to match audit logs timezone)
-    await pool.query('UPDATE Student SET last_login = NOW() WHERE student_id = ?', [studentId]);
+    // Update last_login_at to current timestamp (using NOW() to match audit logs timezone)
+    await pool.query('UPDATE Student SET last_login_at = NOW() WHERE student_id = ?', [studentId]);
 
     // mark OTP as used
     await pool.query('UPDATE OTP SET used = TRUE WHERE otp_id = ?', [record.otp_id]);
@@ -175,11 +182,15 @@ exports.verifyOtp = async (req, res) => {
     await logAction(studentId, 'STUDENT', ip, 'LOGIN_SUCCESS', {});
     
     res.json({ 
-      token, 
-      userId: studentId, 
-      role: 'STUDENT', 
-      must_change_password: mustChange,
-      last_login_at: previousLoginAt // Return the PREVIOUS login time
+      token,
+      user: {
+        id: studentId,
+        name: studentName,
+        role: 'STUDENT',
+        class_id: classId,
+        last_login_at: previousLoginAt // Return the PREVIOUS login time
+      },
+      must_change_password: mustChange
     });
   } catch (err) {
     console.error('verifyOtp error', err);

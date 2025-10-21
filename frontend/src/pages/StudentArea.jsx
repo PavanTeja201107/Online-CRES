@@ -6,7 +6,7 @@ import StudentProfile from './student/StudentProfile';
 import VerifyOtp from './auth/VerifyOtp';
 import ProtectedRoute from '../components/ProtectedRoute';
 import GuestRoute from '../components/GuestRoute';
-import { useAuth } from '../context/AuthContext';
+import useAuth from '../hooks/useAuth';
 import { useEffect } from 'react';
 import ChangePassword from './auth/ChangePassword';
 import ResetPassword from './auth/ResetPassword';

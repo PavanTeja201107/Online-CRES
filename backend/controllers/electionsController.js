@@ -50,12 +50,36 @@ exports.createElection = async (req, res) => {
 // Update election details
 
 
+// Helper function to calculate election status
+function getElectionStatus(election) {
+  const now = new Date();
+  const nomStart = new Date(election.nomination_start);
+  const nomEnd = new Date(election.nomination_end);
+  const voteStart = new Date(election.voting_start);
+  const voteEnd = new Date(election.voting_end);
+  
+  if (now < nomStart) return 'UPCOMING';
+  if (now >= nomStart && now <= nomEnd) return 'NOMINATION';
+  if (now > nomEnd && now < voteStart) return 'NOMINATION_CLOSED';
+  if (now >= voteStart && now <= voteEnd) return 'VOTING';
+  if (now > voteEnd) return 'CLOSED';
+  
+  return 'UNKNOWN';
+}
+
 // List all elections (admin or student)
 exports.listElections = async (req, res) => {
   try {
     let query = 'SELECT * FROM Election ORDER BY created_at DESC';
     const [rows] = await pool.query(query);
-    res.json(rows);
+    
+    // Add status to each election
+    const electionsWithStatus = rows.map(election => ({
+      ...election,
+      status: getElectionStatus(election)
+    }));
+    
+    res.json(electionsWithStatus);
   } catch (err) {
     console.error('listElections error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -354,5 +378,37 @@ exports.notifyResultsPublished = async (req, res) => {
   }
 };
 
+// Publish election results
+exports.publishResults = async (req, res) => {
+  try {
+    const electionId = req.params.id;
+    
+    // Check if election exists
+    const [eRows] = await pool.query('SELECT * FROM Election WHERE election_id = ?', [electionId]);
+    if (!eRows.length) {
+      return res.status(404).json({ error: 'Election not found' });
+    }
+    
+    const election = eRows[0];
+    
+    // Check if voting has ended
+    const now = new Date();
+    if (now < new Date(election.voting_end)) {
+      return res.status(400).json({ error: 'Cannot publish results before voting ends' });
+    }
+    
+    // Update is_published flag
+    await pool.query('UPDATE Election SET is_published = TRUE WHERE election_id = ?', [electionId]);
+    
+    await logAction(req.user.id, req.user.role, req.ip, 'RESULTS_PUBLISHED', { election_id: electionId });
+    
+    res.json({ message: 'Results published successfully' });
+  } catch (err) {
+    console.error('publishResults error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 // listElections, updateElection, getElection etc - implement similarly
+
 

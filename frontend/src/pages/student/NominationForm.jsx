@@ -123,7 +123,61 @@ export default function NominationForm(){
 						return (
 							<div className="bg-white p-4 rounded shadow max-w-xl mb-6">
 								<h3 className="font-semibold mb-2">Your Nomination for Election #{election.election_id}</h3>
-								<Alert kind="info" className="mb-3">You already submitted a nomination for this election. You can’t submit again.</Alert>
+								
+								{/* Status Badge */}
+								<div className="mb-3">
+									<span className={`inline-block px-3 py-1 rounded text-sm font-semibold ${
+										myNomination.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+										myNomination.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+										'bg-yellow-100 text-yellow-800'
+									}`}>
+										{myNomination.status || 'PENDING'}
+									</span>
+								</div>
+
+								{/* Rejection Reason */}
+								{myNomination.status === 'REJECTED' && myNomination.rejection_reason && (
+									<div className="mb-3 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+										<div className="flex items-start">
+											<svg className="w-5 h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+												<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+											</svg>
+											<div>
+												<strong className="text-red-900 block mb-1">Rejection Reason:</strong>
+												<p className="text-red-700 text-sm whitespace-pre-wrap">{myNomination.rejection_reason}</p>
+											</div>
+										</div>
+									</div>
+								)}
+
+								{/* Approval Message */}
+								{myNomination.status === 'APPROVED' && (
+									<div className="mb-3 p-4 bg-green-50 border-l-4 border-green-500 rounded">
+										<div className="flex items-start">
+											<svg className="w-5 h-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+												<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+											</svg>
+											<div>
+												<strong className="text-green-900 block mb-1">🎉 Nomination Approved!</strong>
+												<p className="text-green-700 text-sm">Congratulations! Your nomination has been approved. You are now officially a candidate for this election. Students will be able to view your manifesto and vote for you when voting begins.</p>
+											</div>
+										</div>
+									</div>
+								)}
+
+								{/* Pending Message */}
+								{(!myNomination.status || myNomination.status === 'PENDING') && (
+									<Alert kind="warning" className="mb-3">
+										<strong>⏳ Under Review:</strong> Your nomination is pending admin review. You will be notified via email once a decision is made.
+									</Alert>
+								)}
+								
+								{myNomination.status === 'REJECTED' && (
+									<Alert kind="danger" className="mb-3">
+										<strong>❌ Nomination Rejected:</strong> Unfortunately, your nomination was not approved. See the reason above. You may contact the admin for clarification.
+									</Alert>
+								)}
+								
 								<div className="mb-2">
 									<div className="font-semibold">Manifesto:</div>
 									<div className="border p-2 bg-gray-50 whitespace-pre-wrap">{myNomination.manifesto}</div>

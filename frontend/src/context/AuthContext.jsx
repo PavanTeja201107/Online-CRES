@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect, useRef } from 'react';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 function decodeJwt(token) {
   try {
@@ -19,6 +19,12 @@ export const AuthProvider = ({ children }) => {
     const info = token ? { token, role } : null;
     return info;
   });
+
+  const [lastLogin, setLastLogin] = useState(() => {
+    const storedLastLogin = localStorage.getItem('lastLoginAt');
+    return storedLastLogin || null;
+  });
+  const [lastLoginMessage, setLastLoginMessage] = useState(null);
 
   const logoutTimer = useRef();
 
@@ -51,6 +57,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('role');
     localStorage.removeItem('lastLoginAt'); // Clear last login on logout
     setUser(null);
+    setLastLogin(null);
     // force navigate to landing/login
     try {
       window.location.href = '/';
@@ -62,12 +69,23 @@ export const AuthProvider = ({ children }) => {
   const login = (token, role, lastLoginAt = null) => {
     localStorage.setItem('token', token);
     localStorage.setItem('role', role);
-    
     // Store last login timestamp if provided
-    if (lastLoginAt) {
+    if (lastLoginAt && lastLoginAt !== 'null' && lastLoginAt !== '') {
       localStorage.setItem('lastLoginAt', lastLoginAt);
+      setLastLogin(lastLoginAt);
+      // Format message
+      const date = new Date(lastLoginAt);
+      const formatted = date.toLocaleString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true
+      }).replace(/,([^,]*)$/, ' at$1');
+      setLastLoginMessage(`For your security, your last login was on ${formatted}.`);
+    } else {
+      // Clear last login if not provided (shouldn't happen, but safe)
+      localStorage.removeItem('lastLoginAt');
+      setLastLogin(null);
+      setLastLoginMessage('Welcome! This appears to be your first login.');
     }
-    
     setUser({ token, role });
     scheduleAutoLogout(token);
   };
@@ -85,10 +103,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, lastLogin, lastLoginMessage, setLastLoginMessage }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+

@@ -34,17 +34,23 @@ export default function AdminResults() {
   const [electionsList, setElectionsList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [winner, setWinner] = useState(null);
+  const [electionStatus, setElectionStatus] = useState('');
+  const [isPublished, setIsPublished] = useState(false);
 
   const load = async (id) => {
     if (!id) {
       setResults([]);
       setSummary({ totalEligible: 0, votedCount: 0, notVotedCount: 0 });
       setWinner(null);
+      setElectionStatus('');
+      setIsPublished(false);
       return;
     }
     
     setIsLoading(true);
     setWinner(null);
+    setElectionStatus('');
+    setIsPublished(false);
     
     try {
       setErr('');
@@ -60,15 +66,23 @@ export default function AdminResults() {
         return;
       }
       
-      // Admin API now returns { candidates, summary }
+      // Admin API now returns { candidates, summary, status, is_published }
       let candidatesList = [];
+      let statusVal = '';
+      let isPublishedVal = false;
+      
       if (Array.isArray(data)) {
         candidatesList = data;
         setSummary({ totalEligible: 0, votedCount: 0, notVotedCount: 0 });
       } else {
         candidatesList = data.candidates || [];
         setSummary(data.summary || { totalEligible: 0, votedCount: 0, notVotedCount: 0 });
+        statusVal = data.status || '';
+        isPublishedVal = data.is_published === true || data.is_published === 1;
       }
+      
+      setElectionStatus(statusVal);
+      setIsPublished(isPublishedVal);
       
       // Normalize Google Drive URLs
       const normalize = (url) => {
@@ -100,6 +114,8 @@ export default function AdminResults() {
       setSummary({ totalEligible: 0, votedCount: 0, notVotedCount: 0 });
       setErr(e.response?.data?.error || 'Failed to load results');
       setWinner(null);
+      setElectionStatus('');
+      setIsPublished(false);
     } finally {
       setIsLoading(false);
     }
@@ -137,20 +153,21 @@ export default function AdminResults() {
     }
     
     const winnerId = winner?.candidate_id;
+    const showWinner = isPublished && winner;
     
     return {
-      labels: results.map(r => `${r.candidate_name} (${r.candidate_id})`),
+      labels: results.map(r => r.candidate_name),
       datasets: [
         {
           label: 'Total Votes',
           data: results.map(r => r.votes),
           backgroundColor: results.map(r => 
-            r.candidate_id === winnerId 
+            showWinner && r.candidate_id === winnerId 
               ? 'rgba(34, 197, 94, 0.6)' 
               : 'rgba(79, 70, 229, 0.6)'
           ),
           borderColor: results.map(r => 
-            r.candidate_id === winnerId 
+            showWinner && r.candidate_id === winnerId 
               ? 'rgba(34, 197, 94, 1)' 
               : 'rgba(79, 70, 229, 1)'
           ),
@@ -158,7 +175,7 @@ export default function AdminResults() {
         },
       ],
     };
-  }, [results, winner]);
+  }, [results, winner, isPublished]);
 
   // Configure options for the chart
   const chartOptions = useMemo(() => ({
@@ -293,18 +310,51 @@ export default function AdminResults() {
                 </div>
               </div>
               
+              {/* Alerts */}
+              {results.length > 0 && (
+                <>
+                  {/* Check for ties */}
+                  {(() => {
+                    const topVotes = Math.max(...results.map(x => x.votes));
+                    const topCandidates = results.filter(x => x.votes === topVotes);
+                    if (topVotes > 0 && topCandidates.length > 1) {
+                      return (
+                        <Alert kind="warning" className="mb-4">
+                          <strong>Tie Detected:</strong> Multiple candidates have {topVotes} {topVotes === 1 ? 'vote' : 'votes'}.
+                        </Alert>
+                      );
+                    }
+                  })()}
+                  
+                  {/* Check if all candidates have zero votes */}
+                  {results.every(x => x.votes === 0) && (
+                    <Alert kind="info" className="mb-4">
+                      No votes have been cast yet in this election.
+                    </Alert>
+                  )}
+                </>
+              )}
+
               {/* Candidate Results */}
               <div className="bg-white rounded shadow overflow-hidden">
                 {results.map(r => {
                   const isWinner = winner && r.candidate_id === winner.candidate_id;
                   const voteText = r.votes === 1 ? 'vote' : 'votes';
                   
+                  // Determine badge
+                  let badge = null;
+                  if (isWinner && isPublished) {
+                    badge = { text: 'WINNER', color: 'bg-green-100 text-green-700' };
+                  } else if (isWinner && electionStatus === 'voting' && !isPublished) {
+                    badge = { text: 'LEADING', color: 'bg-yellow-100 text-yellow-700' };
+                  }
+                  
                   return (
                     <div 
                       key={r.candidate_id} 
                       className={`p-4 border-b last:border-b-0 flex items-center gap-4 transition-colors ${
-                        isWinner 
-                          ? 'bg-green-50 hover:bg-green-100' 
+                        badge 
+                          ? 'bg-gray-50 hover:bg-gray-100' 
                           : 'hover:bg-gray-50'
                       }`}
                     >
@@ -340,14 +390,13 @@ export default function AdminResults() {
                         <div className="font-semibold text-gray-900 truncate">
                           {r.candidate_name}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {r.candidate_id}
-                        </div>
                       </div>
                       
                       {/* Vote Count */}
                       <div className="text-right">
-                        <div className={`font-bold text-xl ${isWinner ? 'text-green-700' : 'text-indigo-700'}`}>
+                        <div className={`font-bold text-xl ${
+                          badge ? (badge.text === 'WINNER' ? 'text-green-700' : 'text-yellow-700') : 'text-indigo-700'
+                        }`}>
                           {r.votes}
                         </div>
                         <div className="text-xs text-gray-500">
@@ -355,10 +404,10 @@ export default function AdminResults() {
                         </div>
                       </div>
                       
-                      {/* Winner Badge */}
-                      {isWinner && (
-                        <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
-                          WINNER
+                      {/* Badge */}
+                      {badge && (
+                        <div className={`${badge.color} px-3 py-1 rounded-full text-sm font-semibold`}>
+                          {badge.text}
                         </div>
                       )}
                     </div>

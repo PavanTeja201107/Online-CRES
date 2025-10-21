@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentLogin } from '../../api/authApi';
 import Navbar from '../../components/Navbar';
-import { useAuth } from '../../context/AuthContext';
+import useAuth from '../../hooks/useAuth';
 
 export default function StudentLogin() {
   const [studentId, setStudentId] = useState('');

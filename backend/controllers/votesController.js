@@ -28,7 +28,12 @@ exports.getOrCreateTokenForStudent = async (req, res) => {
     if (!vsRows.length) {
       return res.status(403).json({ error: 'Student not eligible to vote in this election' });
     }
-    if (vsRows[0].has_voted) return res.status(400).json({ error: 'Already voted' });
+    if (vsRows[0].has_voted) {
+      return res.json({ 
+        status: 'already_voted', 
+        message: 'You have already cast your vote for this election' 
+      });
+    }
 
     // check if token exists and unused for this student -> otherwise create new one
   const [tokenRows] = await pool.query('SELECT token_id, used FROM VotingToken WHERE student_id = ? AND election_id = ? AND used = FALSE LIMIT 1', [studentId, electionId]);
@@ -49,7 +54,10 @@ exports.getOrCreateTokenForStudent = async (req, res) => {
     await logAction(studentId, req.user.role, ip, 'TOKEN_ISSUED', { election_id: electionId });
     // Send the plaintext token back to frontend (over HTTPS) for use in vote request.
     // You may choose to not reveal token and instead keep it server-side; this implementation returns token.
-    res.json({ token: plaintextToken });
+    res.json({ 
+      token: plaintextToken, 
+      status: 'token_issued' 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -161,10 +169,28 @@ exports.getResults = async (req, res) => {
   try {
     const electionId = req.params.electionId;
 
-    // Check publish status unless requester is ADMIN
-    const [eRows] = await pool.query('SELECT is_published FROM Election WHERE election_id = ?', [electionId]);
+    // Get election details including status and is_published
+    const [eRows] = await pool.query(
+      'SELECT is_published, nomination_start, nomination_end, voting_start, voting_end FROM Election WHERE election_id = ?', 
+      [electionId]
+    );
     if (!eRows.length) return res.status(404).json({ error: 'Election not found' });
-    const published = !!eRows[0].is_published;
+    const election = eRows[0];
+    const published = !!election.is_published;
+    
+    // Calculate election status
+    const now = new Date();
+    const nomStart = new Date(election.nomination_start);
+    const nomEnd = new Date(election.nomination_end);
+    const voteStart = new Date(election.voting_start);
+    const voteEnd = new Date(election.voting_end);
+    
+    let status = 'UNKNOWN';
+    if (now < nomStart) status = 'UPCOMING';
+    else if (now >= nomStart && now <= nomEnd) status = 'NOMINATION';
+    else if (now > nomEnd && now < voteStart) status = 'NOMINATION_CLOSED';
+    else if (now >= voteStart && now <= voteEnd) status = 'VOTING';
+    else if (now > voteEnd) status = 'CLOSED';
 
     if (req.user?.role !== 'ADMIN' && !published) {
       return res.status(403).json({ error: 'Results not published yet' });
@@ -200,9 +226,15 @@ exports.getResults = async (req, res) => {
     const votedCount = Number(vsAgg[0]?.votedCount || 0);
     const notVotedCount = Math.max(0, totalEligible - votedCount);
 
-    // For ADMIN, return richer payload; for others, preserve array-only shape
+    // For ADMIN, return richer payload with status and is_published; for others, preserve array-only shape
     if (req.user?.role === 'ADMIN') {
-      return res.json({ candidates, summary: { totalEligible, votedCount, notVotedCount } });
+      return res.json({ 
+        election_id: parseInt(electionId),
+        status,
+        is_published: published,
+        candidates, 
+        summary: { totalEligible, votedCount, notVotedCount } 
+      });
     }
     return res.json(candidates);
   } catch (err) {

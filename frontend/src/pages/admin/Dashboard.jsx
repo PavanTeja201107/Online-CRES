@@ -4,8 +4,7 @@ import Navbar from '../../components/Navbar';
 import { listStudents } from '../../api/adminApi';
 import { getElections } from '../../api/electionApi';
 import { listByElection } from '../../api/nominationApi';
-import SecurityBanner from '../../components/ui/SecurityBanner';
-import { formatLastLogin } from '../../utils/formatLastLogin';
+import LastLoginBanner from '../../components/ui/LastLoginBanner';
 
 function StatCard({ title, value, accent = 'indigo', children }) {
   const accentMap = {
@@ -47,22 +46,6 @@ function Dashboard() {
   const [activeDetails, setActiveDetails] = useState([]);
   const [showPending, setShowPending] = useState(false);
   const [showActive, setShowActive] = useState(false);
-  const [showSecurityBanner, setShowSecurityBanner] = useState(false);
-  const [lastLoginMessage, setLastLoginMessage] = useState('');
-
-  useEffect(() => {
-    // Show last login security banner on dashboard load
-    const lastLoginAt = localStorage.getItem('lastLoginAt');
-    if (lastLoginAt) {
-      const formattedDate = formatLastLogin(lastLoginAt);
-      if (formattedDate) {
-        setLastLoginMessage(`For your security, your last login was on ${formattedDate}.`);
-        setShowSecurityBanner(true);
-      }
-      // Clear the stored timestamp so it only shows once
-      localStorage.removeItem('lastLoginAt');
-    }
-  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -130,14 +113,8 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Navbar />
-      {showSecurityBanner && (
-        <SecurityBanner
-          message={lastLoginMessage}
-          onDismiss={() => setShowSecurityBanner(false)}
-          variant="security"
-        />
-      )}
       <div className="container mx-auto px-6 py-10">
+        <LastLoginBanner />
         <header className="mb-8">
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Admin Dashboard</h1>
           <p className="mt-1 text-gray-600">Use the quick actions below to manage your elections ecosystem.</p>

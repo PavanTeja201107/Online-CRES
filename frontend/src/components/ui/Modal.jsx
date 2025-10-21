@@ -1,7 +1,7 @@
 import React from 'react';
 
-export default function Modal({open, onClose, title, children, footer}){
-  if (!open) return null;
+export default function Modal({isOpen, onClose, title, children, footer}){
+  if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { verifyOtp } from '../../api/authApi';
-import { useAuth } from '../../context/AuthContext';
+import useAuth from '../../hooks/useAuth';
 import Navbar from '../../components/Navbar';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -27,8 +27,8 @@ export default function VerifyOtp(){
       
       // backend returns token and maybe role/user
       if (res.token) {
-        // Extract last login timestamp from response
-        const lastLoginAt = res.last_login_at || res.lastLoginAt;
+        // Extract last login timestamp from response (it's in res.user.last_login_at)
+        const lastLoginAt = res.user?.last_login_at || null;
         
         // Save token via context (this will store lastLoginAt in localStorage)
         login(res.token, res.role || 'STUDENT', lastLoginAt);

@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import useAuth from '../hooks/useAuth';
 
 // GuestRoute: If the user is already authenticated, send them to their role dashboard.
 // Otherwise, render the guest-only page (e.g., login, verify OTP, reset password).

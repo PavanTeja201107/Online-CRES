@@ -15,6 +15,7 @@ router.get('/my', verifyToken, requireRole('STUDENT'), ctrl.getMyElections);
 router.post('/:id/notify', verifyToken, requireRole('ADMIN'), ctrl.notifyVotingOpen);
 router.post('/:id/notify/nomination-open', verifyToken, requireRole('ADMIN'), ctrl.notifyNominationOpen);
 router.post('/:id/notify/results-published', verifyToken, requireRole('ADMIN'), ctrl.notifyResultsPublished);
+router.put('/:id/publish', verifyToken, requireRole('ADMIN'), ctrl.publishResults);
 
 // Bulk operations
 // Removed unused bulk publish (automation handles publishing)

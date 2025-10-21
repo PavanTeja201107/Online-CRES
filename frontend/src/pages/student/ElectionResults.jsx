@@ -141,7 +141,7 @@ export default function ResultsPage() {
         const winnerId = winner?.candidate_id;
         
         return {
-            labels: results.map(r => `${r.candidate_name} (${r.candidate_id})`),
+            labels: results.map(r => r.candidate_name),
             datasets: [
                 {
                     label: 'Total Votes',
@@ -316,9 +316,6 @@ export default function ResultsPage() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="font-semibold text-gray-900 truncate">
                                                     {r.candidate_name}
-                                                </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {r.candidate_id}
                                                 </div>
                                             </div>
                                             

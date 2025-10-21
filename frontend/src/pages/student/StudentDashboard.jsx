@@ -4,30 +4,13 @@ import Navbar from '../../components/Navbar';
 import { getMyActiveElection } from '../../api/electionApi';
 import { getMyNotifications } from '../../api/notificationsApi';
 import Alert from '../../components/ui/Alert';
-import SecurityBanner from '../../components/ui/SecurityBanner';
-import { formatLastLogin } from '../../utils/formatLastLogin';
+import LastLoginBanner from '../../components/ui/LastLoginBanner';
 
 export default function StudentDashboard() {
   const [election, setElection] = useState(null);
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [showSecurityBanner, setShowSecurityBanner] = useState(false);
-  const [lastLoginMessage, setLastLoginMessage] = useState('');
-
-  useEffect(() => {
-    // Show last login security banner on dashboard load
-    const lastLoginAt = localStorage.getItem('lastLoginAt');
-    if (lastLoginAt) {
-      const formattedDate = formatLastLogin(lastLoginAt);
-      if (formattedDate) {
-        setLastLoginMessage(`For your security, your last login was on ${formattedDate}.`);
-        setShowSecurityBanner(true);
-      }
-      // Clear the stored timestamp so it only shows once
-      localStorage.removeItem('lastLoginAt');
-    }
-  }, []);
 
   useEffect(() => {
     const fetch = async () => {
@@ -62,14 +45,8 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Navbar />
-      {showSecurityBanner && (
-        <SecurityBanner
-          message={lastLoginMessage}
-          onDismiss={() => setShowSecurityBanner(false)}
-          variant="security"
-        />
-      )}
       <div className="container mx-auto px-6 py-10">
+        <LastLoginBanner />
         <header className="mb-8">
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Student Dashboard</h1>
           <p className="mt-1 text-gray-600">Keep track of your elections, nominations, and notifications.</p>

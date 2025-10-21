@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminLogin } from '../../api/authApi';
-import { useAuth } from '../../context/AuthContext';
+import useAuth from '../../hooks/useAuth';
 import Navbar from '../../components/Navbar';
 import { useToast } from '../../components/ui/ToastProvider';
 
@@ -36,8 +36,8 @@ export default function AdminLogin() {
       setLoading(true);
       const res = await adminLogin(adminId, password);
       
-      // Extract last login timestamp from response
-      const lastLoginAt = res.last_login_at || res.lastLoginAt;
+      // Extract last login timestamp from response (it's in res.user.last_login_at)
+      const lastLoginAt = res.user?.last_login_at || null;
       
       // Save token via context (this will store lastLoginAt in localStorage)
       login(res.token, 'ADMIN', lastLoginAt);
