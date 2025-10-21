@@ -14,6 +14,7 @@ router.get('/my', verifyToken, requireRole('STUDENT'), ctrl.getMyElections);
 // Removed unused class-scoped and id-based admin actions (activate/publish/update/get)
 router.post('/:id/notify', verifyToken, requireRole('ADMIN'), ctrl.notifyVotingOpen);
 router.post('/:id/notify/nomination-open', verifyToken, requireRole('ADMIN'), ctrl.notifyNominationOpen);
+router.post('/:id/notify/results-published', verifyToken, requireRole('ADMIN'), ctrl.notifyResultsPublished);
 
 // Bulk operations
 // Removed unused bulk publish (automation handles publishing)

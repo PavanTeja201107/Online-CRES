@@ -16,7 +16,6 @@ export default function VerifyOtp(){
   const { state } = useLocation();
   const studentId = state?.studentId || studentIdInput;
   const { login } = useAuth();
-
   const { push } = useToast();
   const submit = async (e) => {
     e.preventDefault();
@@ -25,15 +24,22 @@ export default function VerifyOtp(){
       console.log('Verifying OTP for', studentId);
       setLoading(true);
       const res = await verifyOtp(studentId, otp);
+      
       // backend returns token and maybe role/user
       if (res.token) {
-        login(res.token, res.role || 'STUDENT');
+        // Extract last login timestamp from response
+        const lastLoginAt = res.last_login_at || res.lastLoginAt;
+        
+        // Save token via context (this will store lastLoginAt in localStorage)
+        login(res.token, res.role || 'STUDENT', lastLoginAt);
+        
+        push('Login successful', 'success');
+        
         if (res.must_change_password) {
           navigate('/student/change-password');
         } else {
           navigate('/student/dashboard');
         }
-        push('Login successful', 'success');
       } else {
         setErr('No token received');
       }

@@ -45,6 +45,13 @@ export default function VotePage(){
 	const getToken = async () => {
 		try {
 			if (!election) return;
+			
+			// Check policy acceptance BEFORE getting token
+			if (policy && !accepted) { 
+				setShowPolicy(true); 
+				return; 
+			}
+			
 			const res = await getVoteToken(election.election_id);
 			setToken(res.token);
 			setMsg('Token issued. You can now cast your vote.');
@@ -62,7 +69,7 @@ export default function VotePage(){
 				setErr('Please select a candidate and obtain a token.');
 				return;
 			}
-      if (policy && !accepted) { setShowPolicy(true); setLoading(false); return; }
+			// Policy already accepted when getting token, no need to check again
 			const res = await castVote({ token, candidate_id: selected, election_id: election.election_id });
 			setMsg(res?.message || 'Your vote was recorded');
 			setToken('');
@@ -103,13 +110,22 @@ export default function VotePage(){
 				</div>
 
 					{showPolicy && policy && (
-						<div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+						<div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
 							<div className="bg-white rounded shadow max-w-2xl w-full p-4">
-								<h2 className="text-lg font-semibold mb-2">Election Policy</h2>
+								<h2 className="text-lg font-semibold mb-2">Voting Policy</h2>
 								<div className="h-64 overflow-auto border p-2 whitespace-pre-wrap text-sm mb-3">{policy.policy_text}</div>
 								<div className="flex justify-end gap-2">
 									<button onClick={()=>setShowPolicy(false)} className="px-3 py-1 rounded border">Cancel</button>
-									<button onClick={async ()=>{ try{ await acceptPolicy(); setAccepted(true); setShowPolicy(false); setMsg('Policy accepted. Please submit your vote again.'); }catch(e){ setErr(e.response?.data?.error || 'Failed to accept'); } }} className="px-3 py-1 rounded bg-indigo-600 text-white">I Accept</button>
+									<button onClick={async ()=>{ 
+										try{ 
+											await acceptPolicy('Voting Policy'); 
+											setAccepted(true); 
+											setShowPolicy(false); 
+											setMsg('Policy accepted. Please click "Get Token" again to proceed.'); 
+										}catch(e){ 
+											setErr(e.response?.data?.error || 'Failed to accept'); 
+										} 
+									}} className="px-3 py-1 rounded bg-indigo-600 text-white">I Accept</button>
 								</div>
 							</div>
 						</div>

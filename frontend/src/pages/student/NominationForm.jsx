@@ -43,41 +43,46 @@ export default function NominationForm(){
 			})();
 		}, [election]);
 
-		const toDirectImageUrl = (url) => {
-			try {
-				if (!url) return url;
-				// Handle Google Drive share links
-				// Formats:
-				// - https://drive.google.com/file/d/FILE_ID/view?usp=sharing -> https://drive.google.com/uc?export=view&id=FILE_ID
-				// - https://drive.google.com/open?id=FILE_ID -> https://drive.google.com/uc?export=view&id=FILE_ID
-				let m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-				if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
-				m = url.match(/[?&]id=([^&]+)/);
-				if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
-				return url;
-			} catch { return url; }
-		};
+	const toDirectImageUrl = (url) => {
+		try {
+			if (!url) return url;
+			// Handle Google Drive share links
+			// Formats:
+			// - https://drive.google.com/file/d/FILE_ID/view?usp=sharing -> https://drive.google.com/uc?export=view&id=FILE_ID
+			// - https://drive.google.com/open?id=FILE_ID -> https://drive.google.com/uc?export=view&id=FILE_ID
+			let m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+			if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+			m = url.match(/[?&]id=([^&]+)/);
+			if (m && m[1]) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+			return url;
+		} catch { return url; }
+	};
 
-		const submit = async (e) => {
+	const handleNominateClick = (e) => {
+		// Check policy acceptance BEFORE showing nomination form
+		if (policy && !accepted) {
+			setShowPolicy(true);
+			return;
+		}
+		setElection(e);
+	};	const submit = async (e) => {
 		e.preventDefault(); setErr(''); setMsg('');
-			try {
-				if (!election) throw new Error('Select an election where nominations are open');
-				if (myNomination) throw new Error('You have already submitted a nomination for this election');
-      if (policy && !accepted) { setShowPolicy(true); return; }
+		try {
+			if (!election) throw new Error('Select an election where nominations are open');
+			if (myNomination) throw new Error('You have already submitted a nomination for this election');
+			// Policy already checked when clicking "Nominate" button
 			const normalizedUrl = toDirectImageUrl(photoUrl);
 			const res = await submitNomination({ election_id: election.election_id, manifesto, photo_url: normalizedUrl });
 			setMsg(res?.message || 'Nomination submitted');
-				// mark as submitted locally so the form disables without needing a refetch
-				setMyNomination({ submitted: true });
-				// optional: clear form fields
-				setManifesto('');
-				setPhotoUrl('');
+			// mark as submitted locally so the form disables without needing a refetch
+			setMyNomination({ submitted: true });
+			// optional: clear form fields
+			setManifesto('');
+			setPhotoUrl('');
 		} catch (error) {
 			setErr(error.response?.data?.error || error.message || 'Failed to submit');
 		}
-	};
-
-	return (
+	};	return (
 		<div className="min-h-screen bg-gray-50">
 			<Navbar />
 			<div className="container mx-auto px-6 py-8">
@@ -156,7 +161,7 @@ export default function NominationForm(){
 										<div className="text-gray-600">Nominations: {new Date(e.nomination_start).toLocaleString()} - {new Date(e.nomination_end).toLocaleString()}</div>
 									</div>
 									<div>
-										<Button variant={open? 'primary':'secondary'} disabled={!open} onClick={()=>setElection(e)}>{open? 'Nominate' : 'Closed'}</Button>
+										<Button variant={open? 'primary':'secondary'} disabled={!open} onClick={()=>handleNominateClick(e)}>{open? 'Nominate' : 'Closed'}</Button>
 									</div>
 								</li>
 							);
@@ -204,9 +209,9 @@ export default function NominationForm(){
 				</div>
 
 					{showPolicy && policy && (
-						<div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+						<div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
 							<div className="bg-white rounded shadow max-w-2xl w-full p-4">
-								<h2 className="text-lg font-semibold mb-2">Election Policy</h2>
+								<h2 className="text-lg font-semibold mb-2">Nomination Policy</h2>
 								<div className="h-64 overflow-auto border p-2 whitespace-pre-wrap text-sm mb-3">{policy.policy_text}</div>
 								<div className="flex justify-end gap-2">
 									<Button variant="secondary" onClick={()=>setShowPolicy(false)}>Cancel</Button>
@@ -215,7 +220,7 @@ export default function NominationForm(){
 											await acceptPolicy('Nomination Policy');
 											setAccepted(true);
 											setShowPolicy(false);
-											setMsg('Policy accepted. Please submit again.');
+											setMsg('Policy accepted. Please click "Nominate" again to proceed.');
 										} catch(e) {
 											setErr(e.response?.data?.error || 'Failed to accept');
 										}

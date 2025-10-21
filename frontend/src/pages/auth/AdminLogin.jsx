@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { adminLogin } from '../../api/authApi';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
+import { useToast } from '../../components/ui/ToastProvider';
 
 export default function AdminLogin() {
   const [adminId, setAdminId] = useState('');
@@ -11,6 +12,7 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login, logout } = useAuth();
+  const { push } = useToast();
 
   React.useEffect(() => {
     const token = localStorage.getItem('token');
@@ -33,8 +35,15 @@ export default function AdminLogin() {
     try {
       setLoading(true);
       const res = await adminLogin(adminId, password);
-      // save token via context
-      login(res.token, 'ADMIN');
+      
+      // Extract last login timestamp from response
+      const lastLoginAt = res.last_login_at || res.lastLoginAt;
+      
+      // Save token via context (this will store lastLoginAt in localStorage)
+      login(res.token, 'ADMIN', lastLoginAt);
+      
+      push('Login successful', 'success');
+      
       navigate('/admin/dashboard');
     } catch (error) {
       console.error(error);

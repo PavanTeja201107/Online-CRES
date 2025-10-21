@@ -36,17 +36,28 @@ exports.adminLogin = async (req, res) => {
       return res.status(401).json({ error: 'Invalid admin ID or password' });
     }
 
-  // delete old sessions for this user and role only
-  await pool.query('DELETE FROM Session WHERE user_id = ? AND role = ?', [adminId, 'ADMIN']);
+    // Get the current last_login_at BEFORE updating it
+    const previousLoginAt = admin.last_login_at;
+
+    // Update last_login_at to current timestamp (using NOW() to match audit logs timezone)
+    await pool.query('UPDATE Admin SET last_login_at = NOW() WHERE admin_id = ?', [adminId]);
+
+    // delete old sessions for this user and role only
+    await pool.query('DELETE FROM Session WHERE user_id = ? AND role = ?', [adminId, 'ADMIN']);
 
     const sessionId = uuidv4();
     const token = jwt.sign({ userId: adminId, role: 'ADMIN', sessionId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1h' });
-  const expiry = new Date(Date.now() + (60 * 60 * 1000));
-  await pool.query('INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, UTC_TIMESTAMP(), ?)', [sessionId, adminId, 'ADMIN', expiry]);
+    const expiry = new Date(Date.now() + (60 * 60 * 1000));
+    await pool.query('INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, NOW(), ?)', [sessionId, adminId, 'ADMIN', expiry]);
 
     await logAction(adminId, 'ADMIN', ip, 'LOGIN_SUCCESS', {});
 
-    res.json({ message: 'Admin login successful', token, admin: { id: admin.admin_id, name: admin.name, email: admin.email } });
+    res.json({ 
+      message: 'Admin login successful', 
+      token, 
+      admin: { id: admin.admin_id, name: admin.name, email: admin.email },
+      last_login_at: previousLoginAt // Return the PREVIOUS login time
+    });
   } catch (err) {
     console.error('Admin login error:', err);
     await logAction('UNKNOWN', 'ADMIN', req.ip, 'LOGIN_FAILURE', { error: err.message }, 'FAILURE');
@@ -87,8 +98,32 @@ exports.login = async (req, res) => {
     await transporter.sendMail({
       from: process.env.OTP_EMAIL_FROM,
       to: user.email,
-  subject: 'Your Class Representative Election System login OTP',
-  text: `Your OTP is ${otp}. It expires in 5 minutes.`
+      subject: 'Your Login OTP for the College CR Election System',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+          <p>Your One-Time Password (OTP) for accessing the <strong>College CR Election System</strong> is:</p>
+          
+          <div style="background-color: #eff6ff; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+            <p style="font-size: 28px; font-weight: bold; color: #2563eb; letter-spacing: 4px; margin: 0;">${otp}</p>
+          </div>
+          
+          <p>This code is valid for <strong>5 minutes</strong>.</p>
+          
+          <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0;"><strong>🔒 Security Notice:</strong></p>
+            <ul style="margin: 0; padding-left: 20px;">
+              <li style="margin: 5px 0;">Do not share this code with anyone.</li>
+              <li style="margin: 5px 0;">If you did not request this code, please contact support immediately.</li>
+            </ul>
+          </div>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          
+          <p style="margin: 5px 0;">Thank you,<br>
+          <strong>Election Committee</strong><br>
+          College CR Election System</p>
+        </div>
+      `
     });
 
     await logAction(studentId, 'STUDENT', ip, 'OTP_SENT', { email: user.email });
@@ -103,10 +138,10 @@ exports.login = async (req, res) => {
 exports.verifyOtp = async (req, res) => {
   const ip = req.ip;
   try {
-  const { studentId, otp } = req.body;
+    const { studentId, otp } = req.body;
     if (!studentId || !otp) return res.status(400).json({ error: 'Missing fields' });
 
-  const [rows] = await pool.query("SELECT * FROM OTP WHERE user_id = ? AND user_role = 'STUDENT' AND otp_code = ? AND purpose = 'LOGIN' AND used = FALSE ORDER BY created_at DESC LIMIT 1", [studentId, otp]);
+    const [rows] = await pool.query("SELECT * FROM OTP WHERE user_id = ? AND user_role = 'STUDENT' AND otp_code = ? AND purpose = 'LOGIN' AND used = FALSE ORDER BY created_at DESC LIMIT 1", [studentId, otp]);
     if (!rows.length) {
       await logAction(studentId, 'STUDENT', ip, 'OTP_VERIFY', { reason: 'not_found' }, 'FAILURE');
       return res.status(400).json({ error: 'Invalid or expired OTP' });
@@ -118,23 +153,34 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ error: 'Expired OTP' });
     }
 
-    // mark used
+    // Get student details including current last_login BEFORE updating
+    const [studentRows] = await pool.query('SELECT must_change_password, last_login FROM Student WHERE student_id = ?', [studentId]);
+    const previousLoginAt = studentRows.length ? studentRows[0].last_login : null;
+    const mustChange = studentRows.length ? !!studentRows[0].must_change_password : false;
+
+    // Update last_login to current timestamp (using NOW() to match audit logs timezone)
+    await pool.query('UPDATE Student SET last_login = NOW() WHERE student_id = ?', [studentId]);
+
+    // mark OTP as used
     await pool.query('UPDATE OTP SET used = TRUE WHERE otp_id = ?', [record.otp_id]);
 
-  // delete old sessions for this student role only
-  await pool.query('DELETE FROM Session WHERE user_id = ? AND role = ?', [studentId, 'STUDENT']);
+    // delete old sessions for this student role only
+    await pool.query('DELETE FROM Session WHERE user_id = ? AND role = ?', [studentId, 'STUDENT']);
 
     const sessionId = uuidv4();
     const token = jwt.sign({ userId: studentId, role: 'STUDENT', sessionId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1h' });
-  const expiry = new Date(Date.now() + (60 * 60 * 1000));
-  await pool.query('INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, UTC_TIMESTAMP(), ?)', [sessionId, studentId, 'STUDENT', expiry]);
+    const expiry = new Date(Date.now() + (60 * 60 * 1000));
+    await pool.query('INSERT INTO Session (session_id, user_id, role, creation_time, expiry_time) VALUES (?, ?, ?, NOW(), ?)', [sessionId, studentId, 'STUDENT', expiry]);
 
-  // return must_change_password so frontend can prompt change before dashboard
-  const [sRows] = await pool.query('SELECT must_change_password FROM Student WHERE student_id = ?', [studentId]);
-  const mustChange = sRows.length ? !!sRows[0].must_change_password : false;
-
-  await logAction(studentId, 'STUDENT', ip, 'LOGIN_SUCCESS', {});
-  res.json({ token, userId: studentId, role: 'STUDENT', must_change_password: mustChange });
+    await logAction(studentId, 'STUDENT', ip, 'LOGIN_SUCCESS', {});
+    
+    res.json({ 
+      token, 
+      userId: studentId, 
+      role: 'STUDENT', 
+      must_change_password: mustChange,
+      last_login_at: previousLoginAt // Return the PREVIOUS login time
+    });
   } catch (err) {
     console.error('verifyOtp error', err);
     await logAction(req.body.studentId || 'UNKNOWN', 'STUDENT', req.ip, 'OTP_VERIFY_ERROR', { error: err.message }, 'FAILURE');
@@ -175,8 +221,35 @@ exports.requestPasswordReset = async (req, res) => {
     await transporter.sendMail({
       from: process.env.OTP_EMAIL_FROM,
       to: user.email,
-  subject: 'Class Representative Election System Password Reset OTP',
-      text: `Your OTP to reset your password is ${otp}. It expires in 10 minutes.`
+      subject: 'Password Reset OTP for the College CR Election System',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+          <p>You have requested to reset your password for the <strong>College CR Election System</strong>.</p>
+          
+          <p>Your One-Time Password (OTP) is:</p>
+          
+          <div style="background-color: #eff6ff; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+            <p style="font-size: 28px; font-weight: bold; color: #2563eb; letter-spacing: 4px; margin: 0;">${otp}</p>
+          </div>
+          
+          <p>This code is valid for <strong>10 minutes</strong>.</p>
+          
+          <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0;"><strong>🔒 Security Notice:</strong></p>
+            <ul style="margin: 0; padding-left: 20px;">
+              <li style="margin: 5px 0;">Do not share this code with anyone.</li>
+              <li style="margin: 5px 0;">If you did not request this password reset, please contact support immediately.</li>
+              <li style="margin: 5px 0;">Your current password remains active until you complete the reset process.</li>
+            </ul>
+          </div>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          
+          <p style="margin: 5px 0;">Thank you,<br>
+          <strong>Election Committee</strong><br>
+          College CR Election System</p>
+        </div>
+      `
     });
 
     await logAction(userId, role, ip, 'PASSWORD_RESET_OTP_SENT', {});

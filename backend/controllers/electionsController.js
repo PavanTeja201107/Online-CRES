@@ -92,11 +92,53 @@ exports.notifyVotingOpen = async (req, res) => {
     // naive batching
     for (const s of students) {
       if (!s.email) continue;
+      
       await transporter.sendMail({
         from: process.env.OTP_EMAIL_FROM,
         to: s.email,
-  subject: 'Voting for Class Representative Now Open',
-  text: `Dear ${s.name || 'Student'},\n\nThe election for Class Representative is scheduled between ${start} and ${end}. Please log into the Class Representative Election System during this window to cast your vote.\n\nRegards,\nElection Committee`
+        subject: 'Voting is Now Open for the College CR Election!',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <p>Dear <strong>${s.name || 'Student'}</strong>,</p>
+            
+            <p>The voting window for the <strong>College CR Election</strong> in your class is now open!</p>
+            
+            <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0;"><strong>🗳️ Voting Window:</strong></p>
+              <ul style="margin: 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><strong>Voting Start Date/Time:</strong> ${start}</li>
+                <li style="margin: 5px 0;"><strong>Voting End Date/Time (Deadline):</strong> <span style="color: #dc2626; font-weight: bold;">${end}</span></li>
+              </ul>
+            </div>
+            
+            <p>Please log in to the College CR Election System to cast your vote before the deadline. <strong style="color: #2563eb;">Your participation is important</strong> in selecting your Class Representative.</p>
+            
+            <p><strong>How to Cast Your Vote:</strong></p>
+            <ol style="padding-left: 20px;">
+              <li style="margin: 8px 0;">Log in to the College CR Election System</li>
+              <li style="margin: 8px 0;">Navigate to the voting section for your class election</li>
+              <li style="margin: 8px 0;">Review the candidates and their manifestos</li>
+              <li style="margin: 8px 0;">Accept the Voting Policy</li>
+              <li style="margin: 8px 0;">Submit your vote securely</li>
+            </ol>
+            
+            <p style="text-align: center; margin: 20px 0;">
+              <a href="[Voting Page URL]" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Cast Your Vote Now</a>
+            </p>
+            
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0;"><strong>💡 Your vote matters!</strong> Every eligible student is encouraged to exercise their right to vote and help choose your Class Representative.</p>
+            </div>
+            
+            <p>If you experience any technical issues or have questions, please contact our support team at <a href="mailto:[Support Email Address]" style="color: #2563eb;">[Support Email Address]</a>.</p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            
+            <p style="margin: 5px 0;">Best regards,<br>
+            <strong>The Election Committee</strong><br>
+            College CR Election System</p>
+          </div>
+        `
       });
     }
     await logAction(req.user.id, req.user.role, req.ip, 'EMAIL_NOTIFICATION_SENT', { election_id: electionId, recipients: students.length });
@@ -122,11 +164,50 @@ exports.notifyNominationOpen = async (req, res) => {
     const end = new Date(election.nomination_end).toLocaleString();
     for (const s of students) {
       if (!s.email) continue;
+      
       await transporter.sendMail({
         from: process.env.OTP_EMAIL_FROM,
         to: s.email,
-        subject: 'Nomination Window Now Open',
-        text: `Dear ${s.name || 'Student'},\n\nThe nomination window is open from ${start} to ${end}. Please submit your nomination via the Class Representative Election System.\n\nRegards,\nElection Committee`
+        subject: 'Nomination Window for College CR Election is Now Open!',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <p>Dear <strong>${s.name || 'Student'}</strong>,</p>
+            
+            <p>The nomination window for the <strong>College CR Election</strong> in your class is now open!</p>
+            
+            <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0;"><strong>📅 Nomination Window:</strong></p>
+              <ul style="margin: 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><strong>Start Date/Time:</strong> ${start}</li>
+                <li style="margin: 5px 0;"><strong>End Date/Time (Deadline):</strong> <span style="color: #dc2626; font-weight: bold;">${end}</span></li>
+              </ul>
+            </div>
+            
+            <p>If you are interested in running for Class Representative, please submit your nomination through the College CR Election System before the deadline.</p>
+            
+            <p><strong>How to Submit Your Nomination:</strong></p>
+            <ol style="padding-left: 20px;">
+              <li style="margin: 8px 0;">Log in to the College CR Election System</li>
+              <li style="margin: 8px 0;">Navigate to the nominations section</li>
+              <li style="margin: 8px 0;">Review and accept the Nomination Policy</li>
+              <li style="margin: 8px 0;">Complete and submit your nomination form with your manifesto</li>
+            </ol>
+            
+            <p style="text-align: center; margin: 20px 0;">
+              <a href="[Nomination Page URL]" style="display: inline-block; background-color: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Submit Your Nomination</a>
+            </p>
+            
+            <p>Please ensure you meet all eligibility criteria before submitting your nomination.</p>
+            
+            <p>If you have any questions about the nomination process or eligibility requirements, please contact our support team at <a href="mailto:[Support Email Address]" style="color: #2563eb;">[Support Email Address]</a>.</p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            
+            <p style="margin: 5px 0;">Best regards,<br>
+            <strong>The Election Committee</strong><br>
+            College CR Election System</p>
+          </div>
+        `
       });
     }
     await logAction(req.user.id, req.user.role, req.ip, 'EMAIL_NOTIFICATION_SENT', { election_id: electionId, type: 'NOMINATION', recipients: students.length });
@@ -187,4 +268,91 @@ exports.getMyElections = async (req, res) => {
   }
 };
 
+// Notify students when election results are published
+exports.notifyResultsPublished = async (req, res) => {
+  try {
+    const electionId = req.params.id;
+    const [eRows] = await pool.query('SELECT * FROM Election WHERE election_id = ?', [electionId]);
+    if (!eRows.length) return res.status(404).json({ error: 'Election not found' });
+    const election = eRows[0];
+
+    // Get winner information
+    const [winnerRows] = await pool.query(
+      `SELECT n.student_id, s.name, COUNT(v.vote_id) as vote_count
+       FROM Nomination n
+       LEFT JOIN Vote v ON v.nomination_id = n.nomination_id
+       LEFT JOIN Student s ON s.student_id = n.student_id
+       WHERE n.election_id = ?
+       GROUP BY n.nomination_id, n.student_id, s.name
+       ORDER BY vote_count DESC
+       LIMIT 1`,
+      [electionId]
+    );
+
+    if (!winnerRows.length) {
+      return res.status(404).json({ error: 'No winner found for this election' });
+    }
+
+    const winner = winnerRows[0];
+    const [students] = await pool.query('SELECT email, name FROM Student WHERE class_id = ?', [election.class_id]);
+    
+    const host = process.env.SMTP_HOST;
+    const port = parseInt(process.env.SMTP_PORT || '587');
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    
+    if (!host || !user || !pass) {
+      return res.status(400).json({ error: 'SMTP not configured' });
+    }
+    
+    const transporter = nodemailer.createTransport({ host, port, secure: false, auth: { user, pass } });
+
+    for (const s of students) {
+      if (!s.email) continue;
+      
+      await transporter.sendMail({
+        from: process.env.OTP_EMAIL_FROM,
+        to: s.email,
+        subject: `Election Results Now Available - College CR Election`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <p>Dear <strong>${s.name || 'Student'}</strong>,</p>
+            
+            <p>The results for the <strong>College CR Election</strong> (Election ID: ${electionId}) are now published!</p>
+            
+            <div style="background-color: #f0fdf4; border: 2px solid #16a34a; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0; font-size: 18px;"><strong>🎉 Congratulations to the Winner!</strong></p>
+              <p style="margin: 0; font-size: 20px; color: #16a34a; font-weight: bold;">${winner.name}</p>
+              <p style="margin: 5px 0 0 0; color: #666;">Student ID: ${winner.student_id}</p>
+            </div>
+            
+            <p>Thank you to all candidates who participated in this election and to everyone who exercised their right to vote. Your engagement makes our democratic process meaningful.</p>
+            
+            <p><strong>View Full Results:</strong></p>
+            <p>You can view the complete election results, including vote counts and candidate information, by logging into the system.</p>
+            <p style="text-align: center; margin: 20px 0;">
+              <a href="[Results Page URL]" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Full Results Here</a>
+            </p>
+            
+            <p>We appreciate everyone's participation in making this election a success!</p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            
+            <p style="margin: 5px 0;">Best regards,<br>
+            <strong>The Election Committee</strong><br>
+            College CR Election System</p>
+          </div>
+        `
+      });
+    }
+    
+    await logAction(req.user.id, req.user.role, req.ip, 'RESULTS_NOTIFICATION_SENT', { election_id: electionId, recipients: students.length });
+    res.json({ message: 'Results notifications sent successfully', recipients: students.length });
+  } catch (err) {
+    console.error('notifyResultsPublished error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 // listElections, updateElection, getElection etc - implement similarly
+

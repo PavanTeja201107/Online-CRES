@@ -49,6 +49,7 @@ export const AuthProvider = ({ children }) => {
   const doLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('lastLoginAt'); // Clear last login on logout
     setUser(null);
     // force navigate to landing/login
     try {
@@ -58,9 +59,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = (token, role) => {
+  const login = (token, role, lastLoginAt = null) => {
     localStorage.setItem('token', token);
     localStorage.setItem('role', role);
+    
+    // Store last login timestamp if provided
+    if (lastLoginAt) {
+      localStorage.setItem('lastLoginAt', lastLoginAt);
+    }
+    
     setUser({ token, role });
     scheduleAutoLogout(token);
   };

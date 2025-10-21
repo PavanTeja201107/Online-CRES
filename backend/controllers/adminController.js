@@ -113,27 +113,42 @@ exports.deleteClass = async (req, res) => {
           const port = parseInt(process.env.SMTP_PORT || '587');
           const user = process.env.SMTP_USER; const pass = process.env.SMTP_PASS;
           if (host && user && pass) {
-            const transporter = require('nodemailer').createTransport({ host, port, secure: false, auth: { user, pass } });
+            const transporter = nodemailer.createTransport({ host, port, secure: false, auth: { user, pass } });
             for (const s of studentsRows) {
               if (!s.email) continue;
-              const text = [
-                `Dear ${s.name || s.student_id},`,
-                '',
-                `We are informing you that your class (ID: ${id}) has been removed from the Class Representative Election System by an administrator.`,
-                'As part of this action, all dependent data associated with the class has been deleted, including:',
-                '- Student accounts for this class',
-                '- Elections, nominations and voting records for this class',
-                '',
-                'If this was unexpected, please contact the administration team.',
-                '',
-                'Regards,',
-                'Election Committee'
-              ].join('\n');
+              const text = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+                  <p>Dear <strong>${s.name || s.student_id}</strong>,</p>
+                  
+                  <p>We are writing to inform you that your class (Class ID: <strong style="color: #dc2626;">${id}</strong>) has been removed from the <strong>College CR Election System</strong> by an administrator.</p>
+                  
+                  <p>As a result of this action, the following data associated with your class has been permanently deleted:</p>
+                  
+                  <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0 0 10px 0;"><strong>⚠️ Impact on Your Account and Data:</strong></p>
+                    <ul style="margin: 0; padding-left: 20px;">
+                      <li style="margin: 5px 0;"><strong>Student accounts</strong> for this class have been deleted</li>
+                      <li style="margin: 5px 0;"><strong>All elections</strong> associated with this class have been removed</li>
+                      <li style="margin: 5px 0;"><strong>Nomination records</strong> for this class have been deleted</li>
+                      <li style="margin: 5px 0;"><strong>Voting records</strong> for this class have been deleted</li>
+                      <li style="margin: 5px 0;"><strong>Class information</strong> and related data have been removed from the system</li>
+                    </ul>
+                  </div>
+                  
+                  <p>If you believe this action was taken in error or if you have any questions, please contact the system administrator immediately at <a href="mailto:[Admin Contact Email]" style="color: #2563eb;">[Admin Contact Email]</a>.</p>
+                  
+                  <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                  
+                  <p style="margin: 5px 0;">Best regards,<br>
+                  <strong>The Election Committee</strong><br>
+                  College CR Election System</p>
+                </div>
+              `;
               await transporter.sendMail({
                 from: process.env.OTP_EMAIL_FROM,
                 to: s.email,
-                subject: 'Notice: Class removed from the Election System',
-                text
+                subject: 'Important Notice: Your Class Has Been Removed from the College CR Election System',
+                html: text
               });
             }
           }
@@ -269,27 +284,60 @@ exports.createStudent = async (req, res) => {
       const user = process.env.SMTP_USER; const pass = process.env.SMTP_PASS;
       if (host && user && pass) {
         const transporter = nodemailer.createTransport({ host, port, secure: false, auth: { user, pass } });
-  const subject = 'Welcome to Class Representative Election System';
-        const lines = [
-          `Dear ${name},`,
-          '',
-          'Your student account has been created. Please use the following credentials to log in and complete your first-time password change:',
-          '',
-          `Student ID: ${student_id}`,
-          `Default Password: ${defaultPassword}`,
-          '',
-          'Your profile:',
-          `- Name: ${name}`,
-          `- Email: ${email}`,
-          `- Class ID: ${class_id}`,
-          `- Date of Birth: ${date_of_birth}`,
-          '',
-          'For security, you will be required to set a new password on first login.',
-          '',
-          'Regards,',
-          'Election Committee'
-        ];
-        await transporter.sendMail({ from: process.env.OTP_EMAIL_FROM, to: email, subject, text: lines.join('\n') });
+        const subject = 'Welcome to the College CR Election System - Your Account Details';
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+            <p>Dear <strong>${name}</strong>,</p>
+            
+            <p>Welcome to the <strong>College CR Election System</strong>!</p>
+            
+            <p>Your student account has been successfully created. Below are your login credentials and profile details:</p>
+            
+            <div style="background-color: #f3f4f6; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0;"><strong>Login Credentials:</strong></p>
+              <ul style="margin: 0; padding-left: 20px;">
+                <li style="margin: 5px 0;"><strong>Student ID:</strong> <span style="font-size: 16px; color: #2563eb; font-weight: bold;">${student_id}</span></li>
+                <li style="margin: 5px 0;"><strong>Default Password:</strong> <span style="font-size: 16px; color: #2563eb; font-weight: bold;">${defaultPassword}</span></li>
+              </ul>
+            </div>
+            
+            <p><strong>Profile Information:</strong></p>
+            <ul style="padding-left: 20px;">
+              <li style="margin: 5px 0;">Full Name: ${name}</li>
+              <li style="margin: 5px 0;">Email: ${email}</li>
+              <li style="margin: 5px 0;">Class ID: ${class_id}</li>
+              <li style="margin: 5px 0;">Date of Birth: ${date_of_birth}</li>
+            </ul>
+            
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0;"><strong>⚠️ Important Security Instructions:</strong></p>
+              <p style="margin: 0;">For your account security, you must <strong>change your password upon first login</strong>. Using a strong, unique password helps protect your personal information and ensures the integrity of the election process.</p>
+            </div>
+            
+            <p><strong>Next Steps:</strong></p>
+            <ol style="padding-left: 20px;">
+              <li style="margin: 8px 0;">Log in to the system using your <strong>Student ID</strong> and <strong>Default Password</strong></li>
+              <li style="margin: 8px 0;"><strong>Change your password immediately</strong></li>
+              <li style="margin: 8px 0;">Review your profile information for accuracy</li>
+              <li style="margin: 8px 0;">Familiarize yourself with the election system</li>
+            </ol>
+            
+            <p style="text-align: center; margin: 20px 0;">
+              <a href="[Login Page URL]" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Login to College CR Election System</a>
+            </p>
+            
+            <p>If you notice any incorrect information in your profile or have questions about using the system, please contact our support team at <a href="mailto:[Support Email Address]" style="color: #2563eb;">[Support Email Address]</a>.</p>
+            
+            <p>Thank you for participating in the College CR Election System.</p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            
+            <p style="margin: 5px 0;">Best regards,<br>
+            <strong>The Election Committee</strong><br>
+            College CR Election System</p>
+          </div>
+        `;
+        await transporter.sendMail({ from: process.env.OTP_EMAIL_FROM, to: email, subject, html });
       }
     } catch (mailErr) {
       console.error('createStudent welcome email error:', mailErr && mailErr.message ? mailErr.message : mailErr);
