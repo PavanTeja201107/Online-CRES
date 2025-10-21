@@ -19,11 +19,10 @@ export default function StudentNominations() {
 			try {
 				const e = await getMyActiveElection();
 				setElection(e);
-				if (e && e.nomination_policy_id) {
-					const p = await getPolicy();
-					setPolicy(p);
-					setAccepted(!!p.accepted);
-				}
+				// Always use global Nomination Policy by name
+				const p = await getPolicy('Nomination Policy');
+				setPolicy(p);
+				setAccepted(!!p?.accepted);
 			} catch (err) {
 				setError('No active election or failed to load.');
 			}
@@ -34,7 +33,7 @@ export default function StudentNominations() {
 
 	const handleAcceptPolicy = async () => {
 		try {
-			await acceptPolicy();
+			await acceptPolicy('Nomination Policy');
 			setAccepted(true);
 		} catch (err) {
 			setError('Failed to accept policy.');

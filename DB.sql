@@ -43,10 +43,8 @@ CREATE TABLE Election (
   PRIMARY KEY (election_id),
   KEY fk_election_class (class_id),
   KEY fk_election_admin (created_by_admin_id),
-  KEY fk_election_nom_policy (nomination_policy_id),
-  KEY fk_election_vote_policy (voting_policy_id),
   CONSTRAINT fk_election_admin FOREIGN KEY (created_by_admin_id) REFERENCES Admin(admin_id) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_election_class FOREIGN KEY (class_id) REFERENCES Class(class_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_election_class FOREIGN KEY (class_id) REFERENCES Class(class_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE Nomination (
