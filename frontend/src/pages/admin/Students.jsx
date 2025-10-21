@@ -35,13 +35,6 @@ export default function AdminStudents(){
         return;
       }
 
-      // Check for existing email
-      const existingEmail = students.find(s => s.email === form.email);
-      if (existingEmail) {
-        setErr('A student with this email address already exists');
-        return;
-      }
-
       const res = await createStudent(form);
       setMsg(`Student created. Default password: ${res?.defaultPassword || '(generated)'}`);
       setForm({ student_id:'', name:'', email:'', date_of_birth:'', class_id:'' });
@@ -98,12 +91,9 @@ export default function AdminStudents(){
               type="email" 
               value={form.email} 
               onChange={e=>setForm({...form, email:e.target.value})} 
-              className={`border p-2 w-full mt-1 ${students.some(s => s.email === form.email) ? 'border-red-500' : ''}`}
+              className="border p-2 w-full mt-1"
               required 
             />
-            {students.some(s => s.email === form.email) && (
-              <div className="text-red-500 text-xs mt-1">This email address is already registered</div>
-            )}
           </label>
           <label className="text-sm">DOB <span className="text-red-600">*</span>
             <input type="date" placeholder="DOB" value={form.date_of_birth} onChange={e=>setForm({...form, date_of_birth:e.target.value})} className="border p-2 w-full mt-1" required />
