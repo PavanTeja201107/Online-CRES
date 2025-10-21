@@ -11,18 +11,11 @@ router.get('/', verifyToken, ctrl.listElections);
 router.get('/my/active', verifyToken, requireRole('STUDENT'), ctrl.getMyActiveElection);
 router.get('/my', verifyToken, requireRole('STUDENT'), ctrl.getMyElections);
 
-// Class scoped route should also precede generic :id
-router.get('/class/:classId/active', verifyToken, ctrl.getActiveElectionForClass);
-
-// Generic id-based routes and admin actions
-router.put('/:id', verifyToken, requireRole('ADMIN'), ctrl.updateElection);
-router.get('/:id', verifyToken, ctrl.getElection);
-router.post('/:id/activate', verifyToken, requireRole('ADMIN'), ctrl.activateElection); // generate tokens
-router.post('/:id/publish', verifyToken, requireRole('ADMIN'), ctrl.publishResults);
+// Removed unused class-scoped and id-based admin actions (activate/publish/update/get)
 router.post('/:id/notify', verifyToken, requireRole('ADMIN'), ctrl.notifyVotingOpen);
 router.post('/:id/notify/nomination-open', verifyToken, requireRole('ADMIN'), ctrl.notifyNominationOpen);
 
 // Bulk operations
-router.post('/publish/bulk', verifyToken, requireRole('ADMIN'), ctrl.publishResultsBulk);
+// Removed unused bulk publish (automation handles publishing)
 
 module.exports = router;

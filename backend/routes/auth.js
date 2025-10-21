@@ -56,6 +56,6 @@ router.post('/request-reset', otpLimiter, AuthController.requestPasswordReset);
 router.post('/reset-password', resetValidator, otpLimiter, AuthController.resetPassword);
 
 // logout (invalidate session)
-router.post('/logout', verifyToken, AuthController.logout);
+// Removed explicit logout endpoint (frontend clears token locally)
 
 module.exports = router;
