@@ -38,9 +38,13 @@ function QuickLink({ to, label, svg }) {
   );
 }
 
-export default function Dashboard() {
+function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [totals, setTotals] = useState({ students: 0, activeElections: 0, pendingNominations: 0 });
+  const [pendingDetails, setPendingDetails] = useState([]);
+  const [activeDetails, setActiveDetails] = useState([]);
+  const [showPending, setShowPending] = useState(false);
+  const [showActive, setShowActive] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -51,15 +55,34 @@ export default function Dashboard() {
           getElections().catch(() => []),
         ]);
 
-        const activeElections = (elections || []).filter(e => !!e.is_active).length;
+        const activeElectionsList = (elections || []).filter(e => !!e.is_active);
+        const activeElections = activeElectionsList.length;
         const electionIds = (elections || []).map(e => e.election_id);
 
         const nominationsLists = await Promise.all(
           electionIds.map(id => listByElection(id).catch(() => []))
         );
-        const pendingNominations = nominationsLists
+        const pendingNominationsList = nominationsLists
           .flat()
-          .filter(n => String(n.status || '').toUpperCase() === 'PENDING').length;
+          .filter(n => String(n.status || '').toUpperCase() === 'PENDING');
+        const pendingNominations = pendingNominationsList.length;
+
+        // Details for pending nominations
+        const pendingDetails = pendingNominationsList.map(n => ({
+          student_id: n.student_id,
+          election_id: n.election_id,
+          class_id: (elections.find(e => e.election_id === n.election_id) || {}).class_id,
+        }));
+
+        // Details for active elections (all nominations in active elections)
+        const activeDetails = nominationsLists
+          .flat()
+          .filter(n => activeElectionsList.some(e => e.election_id === n.election_id))
+          .map(n => ({
+            student_id: n.student_id,
+            election_id: n.election_id,
+            class_id: (elections.find(e => e.election_id === n.election_id) || {}).class_id,
+          }));
 
         if (mounted) {
           setTotals({
@@ -67,6 +90,8 @@ export default function Dashboard() {
             activeElections,
             pendingNominations,
           });
+          setPendingDetails(pendingDetails);
+          setActiveDetails(activeDetails);
         }
       } catch (e) {
         if (mounted) setTotals({ students: 0, activeElections: 0, pendingNominations: 0 });
@@ -80,8 +105,8 @@ export default function Dashboard() {
 
   const stats = [
     { title: 'Total Students', value: loading ? '…' : totals.students, accent: 'indigo' },
-    { title: 'Active Elections', value: loading ? '…' : totals.activeElections, accent: 'emerald' },
-    { title: 'Pending Nominations', value: loading ? '…' : totals.pendingNominations, accent: 'amber' },
+    { title: 'Active Elections', value: loading ? '…' : totals.activeElections, accent: 'emerald', onClick: () => setShowActive(v => !v) },
+    { title: 'Pending Nominations', value: loading ? '…' : totals.pendingNominations, accent: 'amber', onClick: () => setShowPending(v => !v) },
   ];
 
   return (
@@ -95,9 +120,69 @@ export default function Dashboard() {
 
         <section className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {stats.map((s) => (
-            <StatCard key={s.title} title={s.title} value={s.value} accent={s.accent} />
+            <div key={s.title} onClick={s.onClick} style={s.onClick ? { cursor: 'pointer' } : {}}>
+              <StatCard title={s.title} value={s.value} accent={s.accent} />
+            </div>
           ))}
         </section>
+
+        {/* Expandable details for pending nominations */}
+        {showPending && (
+          <section className="mb-8 bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-bold mb-3">Pending Nominations</h3>
+            {pendingDetails.length ? (
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-100 text-left">
+                    <th className="p-2">Student ID</th>
+                    <th className="p-2">Election ID</th>
+                    <th className="p-2">Class ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingDetails.map((d, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="p-2">{d.student_id}</td>
+                      <td className="p-2">{d.election_id}</td>
+                      <td className="p-2">{d.class_id}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="text-gray-500">No pending nominations found.</div>
+            )}
+          </section>
+        )}
+
+        {/* Expandable details for active elections nominations */}
+        {showActive && (
+          <section className="mb-8 bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-bold mb-3">Active Elections - Nominated Students</h3>
+            {activeDetails.length ? (
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-100 text-left">
+                    <th className="p-2">Student ID</th>
+                    <th className="p-2">Election ID</th>
+                    <th className="p-2">Class ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeDetails.map((d, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="p-2">{d.student_id}</td>
+                      <td className="p-2">{d.election_id}</td>
+                      <td className="p-2">{d.class_id}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="text-gray-500">No nominations found for active elections.</div>
+            )}
+          </section>
+        )}
 
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-xl font-bold text-gray-900">Quick Actions</h2>
@@ -171,3 +256,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+export default Dashboard;

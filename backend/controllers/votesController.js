@@ -31,11 +31,10 @@ exports.getOrCreateTokenForStudent = async (req, res) => {
     if (vsRows[0].has_voted) return res.status(400).json({ error: 'Already voted' });
 
     // check if token exists and unused for this student -> otherwise create new one
-    const [tokenRows] = await pool.query('SELECT token_id FROM VotingToken WHERE student_id = ? AND election_id = ? AND used = FALSE LIMIT 1', [studentId, electionId]);
+  const [tokenRows] = await pool.query('SELECT token_id, used FROM VotingToken WHERE student_id = ? AND election_id = ? AND used = FALSE LIMIT 1', [studentId, electionId]);
     let plaintextToken = null;
-    if (tokenRows.length) {
-      // we don't store plaintext; to re-issue we would need to regenerate and replace hash.
-      // For simplicity: regenerate token and replace hash (safe)
+    if (tokenRows.length && tokenRows[0].used === 0) {
+      // regenerate token and replace hash to avoid token leakage
       plaintextToken = genToken();
       const tokenHash = hashToken(plaintextToken);
       await pool.query('UPDATE VotingToken SET token_hash = ? WHERE token_id = ?', [tokenHash, tokenRows[0].token_id]);
@@ -72,17 +71,14 @@ exports.castVote = async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    // ensure election specific policy accepted (mandatory if defined)
-    const [policyRow] = await conn.query('SELECT voting_policy_id FROM Election WHERE election_id = ? LIMIT 1', [election_id]);
-    if (!policyRow.length) {
-      await conn.rollback();
-      return res.status(404).json({ error: 'Election not found' });
-    }
-    if (policyRow[0].voting_policy_id) {
-      const [pa] = await conn.query('SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? LIMIT 1', [userId, policyRow[0].voting_policy_id]);
+    // ensure global voting policy accepted
+    const [policyRows] = await conn.query("SELECT policy_id FROM Policy WHERE name = 'Voting Policy' LIMIT 1");
+    if (policyRows.length) {
+      const policyId = policyRows[0].policy_id;
+      const [pa] = await conn.query('SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? LIMIT 1', [userId, policyId]);
       if (!pa.length) {
         await conn.rollback();
-        return res.status(403).json({ error: 'Policy must be accepted before voting' });
+        return res.status(403).json({ error: 'You must accept the voting policy before voting.' });
       }
     }
 
@@ -146,7 +142,7 @@ exports.castVote = async (req, res) => {
 
     await conn.commit();
 
-    // audit logs: VOTE_CAST (anonymous) and TOKEN_USED
+  // audit logs: VOTE_CAST (anonymous) and TOKEN_USED
   await logAction('ANON', 'SYSTEM', ip, 'VOTE_CAST', { election_id, ballot_id: ballotId }, 'SUCCESS');
     await logAction('ANON', 'SYSTEM', ip, 'TOKEN_USED', { election_id }, 'SUCCESS');
 
@@ -155,7 +151,7 @@ exports.castVote = async (req, res) => {
     await conn.rollback();
     console.error('castVote error', err);
     await logAction(req.user.id || 'UNKNOWN', req.user.role || 'STUDENT', ip, 'VOTE_ERROR', { error: err.message }, 'FAILURE');
-    res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error' });
   } finally {
     conn.release();
   }

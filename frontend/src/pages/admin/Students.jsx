@@ -97,7 +97,6 @@ export default function AdminStudents(){
                   <td className="p-2">{s.class_id}</td>
                   <td className="p-2">{s.must_change_password ? 'Yes' : 'No'}</td>
                   <td className="p-2 flex gap-2">
-                    <button onClick={async()=>{ const r = await resetStudentPassword(s.student_id); setMsg(`Temp password for ${s.student_id}: ${r?.tempPassword || '(generated)'} (must change at first login)`); load(); }} className="text-indigo-600">Reset PW</button>
                     <button onClick={async()=>{ await deleteStudent(s.student_id); load(); }} className="text-red-600">Delete</button>
                   </td>
                 </tr>

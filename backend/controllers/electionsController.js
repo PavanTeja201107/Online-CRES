@@ -7,9 +7,9 @@ const nodemailer = require('nodemailer');
 
 exports.createElection = async (req, res) => {
   try {
-    const { class_id, nomination_start, nomination_end, voting_start, voting_end, nomination_policy_id, voting_policy_id } = req.body;
-    if (!class_id || !nomination_start || !nomination_end || !voting_start || !voting_end || nomination_policy_id == null || voting_policy_id == null) {
-      return res.status(400).json({ error: 'Missing fields (class and all times and both policy IDs are required)' });
+    const { class_id, nomination_start, nomination_end, voting_start, voting_end } = req.body;
+    if (!class_id || !nomination_start || !nomination_end || !voting_start || !voting_end) {
+      return res.status(400).json({ error: 'Missing fields' });
     }
     // validate time order (strict)
     const ns = new Date(nomination_start), ne = new Date(nomination_end), vs = new Date(voting_start), ve = new Date(voting_end);
@@ -30,14 +30,16 @@ exports.createElection = async (req, res) => {
     if (overlaps.length) {
       return res.status(400).json({ error: 'Another election overlaps this timeline for this class. Complete current election before creating a new one.' });
     }
-    // validate provided policies exist
-    const [[np]] = await pool.query('SELECT policy_id FROM Policy WHERE policy_id = ? LIMIT 1', [nomination_policy_id]);
-    const [[vp]] = await pool.query('SELECT policy_id FROM Policy WHERE policy_id = ? LIMIT 1', [voting_policy_id]);
-    if (!np || !vp) return res.status(400).json({ error: 'Invalid policy id(s)' });
+
+    // get current policies
+    const [nomPolicyRows] = await pool.query("SELECT policy_id FROM Policy WHERE policy_text LIKE '%nomination%' ORDER BY version DESC LIMIT 1");
+    const [votePolicyRows] = await pool.query("SELECT policy_id FROM Policy WHERE policy_text LIKE '%voting%' ORDER BY version DESC LIMIT 1");
+    const nomination_policy_id = nomPolicyRows.length ? nomPolicyRows[0].policy_id : null;
+    const voting_policy_id = votePolicyRows.length ? votePolicyRows[0].policy_id : null;
 
     const [result] = await pool.query(
-      `INSERT INTO Election (class_id, nomination_start, nomination_end, voting_start, voting_end, created_by_admin_id, nomination_policy_id, voting_policy_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [class_id, nomination_start, nomination_end, voting_start, voting_end, req.user.id, nomination_policy_id, voting_policy_id]
+      `INSERT INTO Election (class_id, nomination_start, nomination_end, voting_start, voting_end, nomination_policy_id, voting_policy_id, created_by_admin_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [class_id, nomination_start, nomination_end, voting_start, voting_end, nomination_policy_id, voting_policy_id, req.user.id]
     );
     // ensure not active by default regardless of DB defaults
     await pool.query('UPDATE Election SET is_active = FALSE, is_published = FALSE WHERE election_id = ?', [result.insertId]);
@@ -54,7 +56,7 @@ exports.createElection = async (req, res) => {
 exports.updateElection = async (req, res) => {
   const electionId = req.params.id;
   try {
-  const { nomination_start, nomination_end, voting_start, voting_end, is_active, nomination_policy_id: npid, voting_policy_id: vpid } = req.body;
+    const { nomination_start, nomination_end, voting_start, voting_end, is_active } = req.body;
     if (nomination_start && nomination_end && voting_start && voting_end) {
       const ns = new Date(nomination_start), ne = new Date(nomination_end), vs = new Date(voting_start), ve = new Date(voting_end);
       if (!(ns < ne && ne < vs && vs < ve)) {
@@ -73,25 +75,9 @@ exports.updateElection = async (req, res) => {
         return res.status(400).json({ error: 'Updated timeline overlaps another election for this class.' });
       }
     }
-    // If policies provided on update, validate and set them; otherwise leave untouched
-    let npSet = undefined, vpSet = undefined;
-    if (npid !== undefined) {
-      const [[np2]] = npid === null ? [ [ { policy_id: null } ] ] : await pool.query('SELECT policy_id FROM Policy WHERE policy_id = ? LIMIT 1', [npid]);
-      if (npid !== null && !np2) return res.status(400).json({ error: 'Invalid nomination_policy_id' });
-      npSet = npid;
-    }
-    if (vpid !== undefined) {
-      const [[vp2]] = vpid === null ? [ [ { policy_id: null } ] ] : await pool.query('SELECT policy_id FROM Policy WHERE policy_id = ? LIMIT 1', [vpid]);
-      if (vpid !== null && !vp2) return res.status(400).json({ error: 'Invalid voting_policy_id' });
-      vpSet = vpid;
-    }
-
     const [result] = await pool.query(
-      `UPDATE Election SET nomination_start=?, nomination_end=?, voting_start=?, voting_end=?, is_active=?,
-       nomination_policy_id = COALESCE(?, nomination_policy_id),
-       voting_policy_id = COALESCE(?, voting_policy_id)
-       WHERE election_id=?`,
-      [nomination_start, nomination_end, voting_start, voting_end, is_active, npSet, vpSet, electionId]
+      `UPDATE Election SET nomination_start=?, nomination_end=?, voting_start=?, voting_end=?, is_active=? WHERE election_id=?`,
+      [nomination_start, nomination_end, voting_start, voting_end, is_active, electionId]
     );
 
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Election not found' });
@@ -145,17 +131,6 @@ exports.activateElection = async (req, res) => {
       return res.status(400).json({ error: 'Election already active' });
     }
 
-    // Only allow activation from nomination start until voting end
-    const now = new Date();
-    const ns = new Date(election.nomination_start);
-    const ve = new Date(election.voting_end);
-    if (now < ns) {
-      return res.status(400).json({ error: 'Cannot activate before nomination starts' });
-    }
-    if (now > ve) {
-      return res.status(400).json({ error: 'Cannot activate after voting has ended' });
-    }
-
     // ensure no other active election exists for this class
     const [existsActive] = await pool.query('SELECT 1 FROM Election WHERE class_id = ? AND is_active = TRUE AND election_id <> ? LIMIT 1', [election.class_id, electionId]);
     if (existsActive.length) return res.status(400).json({ error: 'Another election is already active for this class' });
@@ -178,10 +153,10 @@ exports.activateElection = async (req, res) => {
       // Do not email tokens (we will issue in-session), but you can send notification
     }
 
-    // batch insert (idempotent to avoid duplicates if activation overlaps cron)
+    // batch insert
     if (insertVt.length) {
-      await pool.query('INSERT IGNORE INTO VotingToken (token_id, student_id, election_id, token_hash) VALUES ?', [insertVt]);
-      await pool.query('INSERT IGNORE INTO VoterStatus (student_id, election_id, has_voted) VALUES ?', [insertVs]);
+      await pool.query('INSERT INTO VotingToken (token_id, student_id, election_id, token_hash) VALUES ?', [insertVt]);
+      await pool.query('INSERT INTO VoterStatus (student_id, election_id, has_voted) VALUES ?', [insertVs]);
     }
 
     await pool.query('UPDATE Election SET is_active = TRUE WHERE election_id = ?', [electionId]);
@@ -197,9 +172,8 @@ exports.publishResults = async (req, res) => {
   try {
     const electionId = req.params.id;
     // ensure voting has ended before publishing
-    const [[eInfo]] = await pool.query('SELECT class_id, voting_end, is_published FROM Election WHERE election_id = ?', [electionId]);
+    const [[eInfo]] = await pool.query('SELECT class_id, voting_end FROM Election WHERE election_id = ?', [electionId]);
     if (!eInfo) return res.status(404).json({ error: 'Election not found' });
-    if (eInfo.is_published) return res.json({ message: 'Already published' });
     if (new Date() <= new Date(eInfo.voting_end)) {
       return res.status(400).json({ error: 'Cannot publish results before voting ends' });
     }
@@ -222,7 +196,7 @@ exports.publishResults = async (req, res) => {
       else { outcome = 'WINNER'; winnerId = countRows[0].candidate_id; }
     }
 
-  await pool.query('UPDATE Election SET is_published = TRUE, is_active = FALSE WHERE election_id = ?', [electionId]);
+    await pool.query('UPDATE Election SET is_published = TRUE, is_active = FALSE WHERE election_id = ?', [electionId]);
     await logAction(req.user.id, req.user.role, req.ip, 'RESULTS_PUBLISHED', { election_id: electionId, outcome, winnerId });
 
     // notify winner by email (if clear winner)
@@ -285,7 +259,7 @@ exports.publishResultsBulk = async (req, res) => {
       return res.status(400).json({ error: `Cannot publish before voting ends for elections: ${notEnded.map(r=>r.election_id).join(', ')}` });
     }
     await pool.query(
-      `UPDATE Election SET is_published = TRUE, is_active = FALSE WHERE election_id IN (${election_ids.map(()=>'?').join(',')}) AND is_published = FALSE`,
+      `UPDATE Election SET is_published = TRUE, is_active = FALSE WHERE election_id IN (${election_ids.map(()=>'?').join(',')})`,
       election_ids
     );
     await logAction(req.user.id, req.user.role, req.ip, 'RESULTS_PUBLISHED_BULK', { election_ids });

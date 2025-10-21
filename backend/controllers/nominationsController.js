@@ -24,10 +24,12 @@ exports.submitNomination = async (req, res) => {
     const [exists] = await pool.query('SELECT 1 FROM Nomination WHERE student_id = ? AND election_id = ? LIMIT 1', [studentId, election_id]);
     if (exists.length) return res.status(400).json({ error: 'You have already submitted a nomination for this election' });
 
-    // ensure policy accepted for nomination (mandatory if election defines it)
-    if (e.nomination_policy_id) {
-      const [accepted] = await pool.query('SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? LIMIT 1', [studentId, e.nomination_policy_id]);
-      if (!accepted.length) return res.status(403).json({ error: 'Policy must be accepted before nomination' });
+    // ensure global nomination policy accepted
+    const [policyRows] = await pool.query("SELECT policy_id FROM Policy WHERE name = 'Nomination Policy' LIMIT 1");
+    if (policyRows.length) {
+      const policyId = policyRows[0].policy_id;
+      const [accepted] = await pool.query('SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ?', [studentId, policyId]);
+      if (!accepted.length) return res.status(403).json({ error: 'You must accept the nomination policy before submitting.' });
     }
 
     await pool.query('INSERT INTO Nomination (election_id, student_id, manifesto, photo_url) VALUES (?, ?, ?, ?)', [election_id, studentId, manifesto, photo_url]);

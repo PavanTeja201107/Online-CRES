@@ -187,14 +187,12 @@ exports.requestPasswordReset = async (req, res) => {
   }
 };
 
-// RESET PASSWORD (verify OTP and set new password)
 exports.resetPassword = async (req, res) => {
   const ip = req.ip;
   try {
     const { userId, otp, newPassword } = req.body;
     if (!userId || !otp || !newPassword) return res.status(400).json({ error: 'Missing fields' });
 
-    // Determine role to disambiguate OTP owner
     const [studentRowsRole] = await pool.query('SELECT 1 FROM Student WHERE student_id = ? LIMIT 1', [userId]);
     const [adminRowsRole] = await pool.query('SELECT 1 FROM Admin WHERE admin_id = ? LIMIT 1', [userId]);
     const roleForOtp = studentRowsRole.length ? 'STUDENT' : adminRowsRole.length ? 'ADMIN' : null;

@@ -9,6 +9,7 @@ export default function StudentDashboard() {
   const [election, setElection] = useState(null);
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
@@ -26,6 +27,11 @@ export default function StudentDashboard() {
     };
     fetch();
   }, []);
+
+  // Simulate notification toggle (replace with API call if needed)
+  const handleToggleNotifications = () => {
+    setNotificationsEnabled(v => !v);
+  };
 
   const quickLinks = [
     { to: '/student/election', label: 'Election Details' },
@@ -94,17 +100,30 @@ export default function StudentDashboard() {
             <aside className="lg:col-span-1">
               <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                 <h2 className="mb-3 text-xl font-bold text-gray-900">Notifications</h2>
-                {(!notices || notices.length === 0) ? (
+                <div className="mb-3 flex items-center justify-between">
+                  <span>Notifications</span>
+                  <button
+                    className={`px-3 py-1 rounded ${notificationsEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}
+                    onClick={handleToggleNotifications}
+                  >
+                    {notificationsEnabled ? 'Enabled' : 'Disabled'}
+                  </button>
+                </div>
+                {(!notices || notices.length === 0 || !notificationsEnabled) ? (
                   <div className="text-gray-600">No notifications yet.</div>
                 ) : (
                   <ul className="space-y-3">
-                    {notices.map((n, idx) => {
+                    {notices.slice(0, 3).map((n, idx) => {
                       const kind = n.type === 'RESULTS_PUBLISHED' ? 'success' : n.type === 'VOTING_OPEN' ? 'info' : 'warning';
+                      let message = n.message;
+                      if (n.type === 'RESULTS_PUBLISHED') {
+                        message = `Results published for Election #${n.election_id}`;
+                      }
                       return (
                         <li key={idx}>
                           <Alert kind={kind}>
                             <div className="text-sm">
-                              <span className="font-medium">Election #{n.election_id}:</span> {n.message}
+                              <span className="font-medium">Election #{n.election_id}:</span> {message}
                             </div>
                           </Alert>
                         </li>

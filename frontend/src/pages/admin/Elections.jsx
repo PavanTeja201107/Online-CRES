@@ -1,34 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
-import { getElections, createElection, notifyVotingOpen, notifyNominationOpen } from '../../api/electionApi';
+import { getElections, createElection, updateElection, activateElection, publishElection, publishElectionsBulk, notifyVotingOpen, notifyNominationOpen } from '../../api/electionApi';
 import { listClasses } from '../../api/adminApi';
 import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { useToast } from '../../components/ui/ToastProvider';
-import { listPolicies } from '../../api/policyApi';
 
 export default function AdminElections(){
   const [elections, setElections] = useState([]);
-  const [form, setForm] = useState({ class_id:'', nomination_start:'', nomination_end:'', voting_start:'', voting_end:'', nomination_policy_id:'', voting_policy_id:'' });
-  // Removed selection and manual actions; only notifications remain
+  const [form, setForm] = useState({ class_id:'', nomination_start:'', nomination_end:'', voting_start:'', voting_end:'' });
+  const [selected, setSelected] = useState([]);
   const [msg, setMsg] = useState('');
   const { push } = useToast();
   const [err, setErr] = useState('');
   const [classes, setClasses] = useState([]);
-  const [policies, setPolicies] = useState([]);
 
   const load = async ()=>{
     try { const list = await getElections(); setElections(list); }
     catch(e){ setErr(e.response?.data?.error || 'Failed to load'); }
   };
-  useEffect(()=>{ 
-    load(); 
-    (async()=>{ 
-      try{ const c = await listClasses(); setClasses(c||[]);}catch(err){ console.debug('listClasses failed', err); }
-      try{ const p = await listPolicies(); setPolicies(p||[]);}catch(err){ console.debug('listPolicies failed', err); }
-    })(); 
-  },[]);
+  useEffect(()=>{ load(); (async()=>{ try{ const c = await listClasses(); setClasses(c||[]);}catch{} })(); },[]);
 
   const submit = async (e)=>{
     e.preventDefault(); setErr(''); setMsg('');
@@ -42,25 +34,22 @@ export default function AdminElections(){
         setErr('Invalid timeline: ensure nomination_start < nomination_end < voting_start < voting_end');
         return;
       }
-      if (!form.nomination_policy_id || !form.voting_policy_id) { setErr('Select both policies'); return; }
-      const payload = {
-        class_id: form.class_id,
-        nomination_start: form.nomination_start,
-        nomination_end: form.nomination_end,
-        voting_start: form.voting_start,
-        voting_end: form.voting_end,
-        nomination_policy_id: Number(form.nomination_policy_id),
-        voting_policy_id: Number(form.voting_policy_id)
-      };
-      await createElection(payload);
+      await createElection(form);
       setMsg('Election created');
-      setForm({ class_id:'', nomination_start:'', nomination_end:'', voting_start:'', voting_end:'', nomination_policy_id:'', voting_policy_id:'' });
+      setForm({ class_id:'', nomination_start:'', nomination_end:'', voting_start:'', voting_end:'' });
       load();
     }
     catch(e){ setErr(e.response?.data?.error || 'Failed to create'); }
   };
 
-  // No bulk publish; publish is automatic after voting end
+  const toggleSelect = (id) => {
+    setSelected(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+  };
+
+  const doBulkPublish = async ()=>{
+    try { await publishElectionsBulk(selected); setMsg('Bulk published'); setSelected([]); load(); }
+    catch(e){ setErr(e.response?.data?.error || 'Failed bulk publish'); }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,32 +70,19 @@ export default function AdminElections(){
           <Input label="Nomination end" required type="datetime-local" value={form.nomination_end} onChange={e=>setForm({...form, nomination_end:e.target.value})} />
           <Input label="Voting start" required type="datetime-local" value={form.voting_start} onChange={e=>setForm({...form, voting_start:e.target.value})} />
           <Input label="Voting end" required type="datetime-local" value={form.voting_end} onChange={e=>setForm({...form, voting_end:e.target.value})} />
-          <Select label="Nomination Policy" required value={form.nomination_policy_id} onChange={e=>setForm({...form, nomination_policy_id:e.target.value})}>
-            <option value="">-- Select Policy --</option>
-            {policies.map(p => (
-              <option key={p.policy_id} value={p.policy_id}>#{p.policy_id} v{p.version}</option>
-            ))}
-          </Select>
-          <Select label="Voting Policy" required value={form.voting_policy_id} onChange={e=>setForm({...form, voting_policy_id:e.target.value})}>
-            <option value="">-- Select Policy --</option>
-            {policies.map(p => (
-              <option key={p.policy_id} value={p.policy_id}>#{p.policy_id} v{p.version}</option>
-            ))}
-          </Select>
-          <Button disabled={!form.class_id || !form.nomination_start || !form.nomination_end || !form.voting_start || !form.voting_end || !form.nomination_policy_id || !form.voting_policy_id}>Create</Button>
+          <Button disabled={!form.class_id || !form.nomination_start || !form.nomination_end || !form.voting_start || !form.voting_end}>Create</Button>
         </form>
 
         <div className="bg-white rounded shadow overflow-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="bg-gray-100 text-left">
+                {/* Select column removed */}
                 <th className="p-2">ID</th>
                 <th className="p-2">Class</th>
                 <th className="p-2">Nomination</th>
                 <th className="p-2">Voting</th>
                 <th className="p-2">Active</th>
-                <th className="p-2">Nom.Policy</th>
-                <th className="p-2">Vote.Policy</th>
                 <th className="p-2">Published</th>
                 <th className="p-2">Actions</th>
               </tr>
@@ -114,15 +90,15 @@ export default function AdminElections(){
             <tbody>
               {elections.map(e => (
                 <tr key={e.election_id} className="border-b">
+                  {/* Select checkbox removed */}
                   <td className="p-2">{e.election_id}</td>
                   <td className="p-2">{(() => { const c = classes.find(x => x.class_id === e.class_id); return c ? `${c.class_id} - ${c.class_name}` : e.class_id; })()}</td>
                   <td className="p-2">{new Date(e.nomination_start).toLocaleString()} - {new Date(e.nomination_end).toLocaleString()}</td>
                   <td className="p-2">{new Date(e.voting_start).toLocaleString()} - {new Date(e.voting_end).toLocaleString()}</td>
                   <td className="p-2">{e.is_active ? 'Yes' : 'No'}</td>
-                  <td className="p-2">{e.nomination_policy_id ?? '-'}</td>
-                  <td className="p-2">{e.voting_policy_id ?? '-'}</td>
                   <td className="p-2">{e.is_published ? 'Yes' : 'No'}</td>
                   <td className="p-2 flex gap-2">
+                    {/* Only show notification buttons, remove activate/publish */}
                     <button onClick={async()=>{ await notifyNominationOpen(e.election_id); push('Nomination notifications sent','success'); }} className="text-blue-600">Notify Nomination</button>
                     <button onClick={async()=>{ await notifyVotingOpen(e.election_id); push('Voting notifications sent','success'); }} className="text-blue-600">Notify Voting</button>
                   </td>
@@ -131,7 +107,7 @@ export default function AdminElections(){
             </tbody>
           </table>
         </div>
-        {/* No bulk publish. Results are auto-published after voting ends. */}
+        {/* Bulk publish removed as publishing is automated */}
       </div>
     </div>
   );
