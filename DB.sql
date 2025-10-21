@@ -127,7 +127,6 @@ CREATE TABLE AuditLog (
   PRIMARY KEY (log_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- 2. voting-specific tables for anonymity & per-election voter tracking
 CREATE TABLE VotingToken (
   token_id VARCHAR(64) NOT NULL,
   student_id VARCHAR(20) DEFAULT NULL,
@@ -143,6 +142,13 @@ CREATE TABLE VotingToken (
   CONSTRAINT fk_votingtoken_election FOREIGN KEY (election_id) REFERENCES Election(election_id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_votingtoken_student FOREIGN KEY (student_id) REFERENCES Student(student_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+-- Insert default policies
+INSERT INTO Policy (policy_id, name, policy_text, version, created_at) VALUES
+  (1, 'Nomination Policy', 'Default nomination policy text.', 1, NOW()),
+  (2, 'Voting Policy', 'Default voting policy text.', 1, NOW())
+ON DUPLICATE KEY UPDATE policy_text=VALUES(policy_text), version=VALUES(version);
 
 CREATE TABLE VoterStatus (
   id INT NOT NULL AUTO_INCREMENT,
