@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
-import { getElections, createElection, updateElection, activateElection, publishElection, publishElectionsBulk, notifyVotingOpen, notifyNominationOpen } from '../../api/electionApi';
+import { getElections, createElection, notifyVotingOpen, notifyNominationOpen } from '../../api/electionApi';
 import { listClasses } from '../../api/adminApi';
 import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
@@ -10,7 +10,7 @@ import { useToast } from '../../components/ui/ToastProvider';
 export default function AdminElections(){
   const [elections, setElections] = useState([]);
   const [form, setForm] = useState({ class_id:'', nomination_start:'', nomination_end:'', voting_start:'', voting_end:'' });
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected] = useState([]); // legacy state (no bulk actions now)
   const [msg, setMsg] = useState('');
   const { push } = useToast();
   const [err, setErr] = useState('');
@@ -42,14 +42,7 @@ export default function AdminElections(){
     catch(e){ setErr(e.response?.data?.error || 'Failed to create'); }
   };
 
-  const toggleSelect = (id) => {
-    setSelected(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
-  };
-
-  const doBulkPublish = async ()=>{
-    try { await publishElectionsBulk(selected); setMsg('Bulk published'); setSelected([]); load(); }
-    catch(e){ setErr(e.response?.data?.error || 'Failed bulk publish'); }
-  };
+  // Bulk/activate/publish actions removed; automation handles lifecycle
 
   return (
     <div className="min-h-screen bg-gray-50">
