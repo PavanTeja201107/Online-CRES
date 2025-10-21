@@ -10,7 +10,6 @@ import { useToast } from '../../components/ui/ToastProvider';
 export default function AdminElections(){
   const [elections, setElections] = useState([]);
   const [form, setForm] = useState({ class_id:'', nomination_start:'', nomination_end:'', voting_start:'', voting_end:'' });
-  const [selected, setSelected] = useState([]); // legacy state (no bulk actions now)
   const [msg, setMsg] = useState('');
   const { push } = useToast();
   const [err, setErr] = useState('');
