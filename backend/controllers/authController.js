@@ -7,6 +7,9 @@ const nodemailer = require('nodemailer');
 const logAction = require('../utils/logAction');
 const { genToken, hashToken } = require('../utils/tokenUtils');
 
+// Email transporter configuration used for sending OTPs and password reset emails.
+// This transporter reads SMTP settings from environment variables and is used
+// throughout the auth controller when sending transactional messages.
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '587'),
@@ -17,6 +20,12 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+/*
+  Purpose: Authenticate an admin user and create a new session.
+  Parameters: req (express request) - expects body.adminId and body.password.
+              res (express response) - used to send JSON response.
+  Returns: Sends JSON containing a JWT token and previous last_login_at timestamp on success.
+*/
 exports.adminLogin = async (req, res) => {
   const ip = req.ip;
   try {
@@ -70,6 +79,12 @@ exports.adminLogin = async (req, res) => {
   }
 };
 
+/*
+  Purpose: Authenticate a student using credentials and issue a one-time password (OTP).
+  Parameters: req - expects body.studentId and body.password.
+              res - used to send JSON response indicating OTP sent or error.
+  Returns: Sends JSON message 'OTP sent to registered email' on success.
+*/
 // STUDENT login -> send OTP
 exports.login = async (req, res) => {
   const ip = req.ip;
@@ -140,6 +155,12 @@ exports.login = async (req, res) => {
   }
 };
 
+/*
+  Purpose: Verify a student's OTP and complete login.
+  Parameters: req - expects body.studentId and body.otp.
+              res - returns a JWT token, user info, and must_change_password flag.
+  Returns: JSON with token and user details on success.
+*/
 exports.verifyOtp = async (req, res) => {
   const ip = req.ip;
   try {
@@ -199,6 +220,12 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
+/*
+  Purpose: Generate and send a password reset OTP to a user (student or admin).
+  Parameters: req - expects body.userId.
+              res - responds with a success message when OTP is sent.
+  Returns: JSON message 'Reset OTP sent to registered email' on success.
+*/
 exports.requestPasswordReset = async (req, res) => {
   const ip = req.ip;
   try {
@@ -271,6 +298,12 @@ exports.requestPasswordReset = async (req, res) => {
   }
 };
 
+/*
+  Purpose: Reset user's password using a valid OTP and a new password.
+  Parameters: req - expects body.userId, body.otp, body.newPassword.
+              res - returns success or error message.
+  Returns: JSON message 'Password reset successful' on success.
+*/
 exports.resetPassword = async (req, res) => {
   const ip = req.ip;
   try {
@@ -315,6 +348,12 @@ exports.resetPassword = async (req, res) => {
 };
 
 
+/*
+  Purpose: Allow a logged-in student who must change their initial password to set a new one.
+  Parameters: req - authenticated request with req.user and body.newPassword.
+              res - returns success message on completion.
+  Returns: JSON message 'Password changed successfully...' on success.
+*/
 exports.changePassword = async (req, res) => {
   const ip = req.ip;
   const { newPassword } = req.body;
@@ -359,6 +398,12 @@ exports.changePassword = async (req, res) => {
 };
 
 
+/*
+  Purpose: Logout an authenticated user by invalidating their session entry.
+  Parameters: req - authenticated request containing req.user.sessionId.
+              res - returns a JSON message indicating logout success.
+  Returns: JSON message 'Logged out successfully' on success.
+*/
 // LOGOUT (invalidate session)
 exports.logout = async (req, res) => {
   const ip = req.ip;

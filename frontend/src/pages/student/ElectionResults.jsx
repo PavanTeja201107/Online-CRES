@@ -1,3 +1,19 @@
+/**
+ * Page: ElectionResults
+ *
+ * Allows students to view the results of their class elections, including winner, vote counts,
+ * and visualizations. Uses Chart.js for bar charts and confetti for winner celebration.
+ *
+ * Features:
+ *   - Fetches and displays election results
+ *   - Shows winner and vote breakdown
+ *   - Displays confetti animation for winners
+ *   - Uses Chart.js for data visualization
+ *
+ * Usage:
+ *   Rendered as part of the student dashboard routes.
+ */
+
 import React, { useEffect, useState, useMemo } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyElections } from '../../api/electionApi'; // Use getMyElections for Student

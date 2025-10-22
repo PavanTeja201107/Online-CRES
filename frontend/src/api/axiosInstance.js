@@ -1,3 +1,17 @@
+/**
+ * Axios Instance
+ *
+ * Configures a reusable axios instance for API requests, including base URL, credentials,
+ * and interceptors for authentication and error handling.
+ *
+ * Features:
+ *   - Attaches JWT token from localStorage to requests
+ *   - Handles 401 Unauthorized responses by clearing auth and redirecting to login
+ *
+ * Usage:
+ *   import axiosInstance from './axiosInstance';
+ */
+
 import axios from 'axios';
 
 const axiosInstance = axios.create({

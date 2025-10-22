@@ -1,3 +1,16 @@
+/**
+ * API: studentsApi
+ *
+ * Provides functions to interact with student-related backend endpoints, including profile retrieval
+ * and password reset flows. Uses axios for HTTP requests.
+ *
+ * Exports:
+ *   - getMyProfile, requestPasswordReset, resetPassword
+ *
+ * Usage:
+ *   import { getMyProfile } from './studentsApi';
+ */
+
 import axios from './axiosInstance';
 
 export const getMyProfile = () => axios.get('/students/me').then(r=>r.data);

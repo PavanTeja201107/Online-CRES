@@ -13,6 +13,12 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+/*
+  Purpose: Submit a nomination for the logged-in student into a given election.
+  Parameters: req - authenticated student req containing election_id, manifesto, photo_url in body.
+              res - returns confirmation or validation error.
+  Returns: JSON message 'Nomination submitted' on success.
+*/
 exports.submitNomination = async (req, res) => {
   try {
     const { election_id, manifesto, photo_url } = req.body;
@@ -55,6 +61,11 @@ exports.submitNomination = async (req, res) => {
   }
 };
 
+/*
+  Purpose: List all nominations for a specific election (admin view).
+  Parameters: req - expects params.electionId; res - returns array of nominations.
+  Returns: JSON array of nomination records.
+*/
 exports.listByElection = async (req, res) => {
   const electionId = req.params.electionId;
   try {
@@ -66,6 +77,11 @@ exports.listByElection = async (req, res) => {
   }
 };
 
+/*
+  Purpose: List only nominations that are APPROVED for use in the voting UI.
+  Parameters: req - expects params.electionId; res - returns array of approved nominations.
+  Returns: JSON array of approved nominations including candidate name.
+*/
 // list only approved nominations for a given election (for voting UI)
 exports.listApprovedByElection = async (req, res) => {
   const electionId = req.params.electionId;
@@ -84,6 +100,11 @@ exports.listApprovedByElection = async (req, res) => {
   }
 };
 
+/*
+  Purpose: Retrieve the current authenticated student's nomination for a specific election (if any).
+  Parameters: req - expects params.electionId; res - returns nomination object or null.
+  Returns: nomination object or null.
+*/
 // get current student's nomination (if any) for an election
 exports.getMyNomination = async (req, res) => {
   try {
@@ -98,6 +119,11 @@ exports.getMyNomination = async (req, res) => {
   }
 };
 
+/*
+  Purpose: Approve a pending nomination. Validates timing and updates nomination status, then emails the student.
+  Parameters: req - expects params.id (nomination id); res - returns confirmation.
+  Returns: JSON message 'Nomination approved and student notified' on success.
+*/
 exports.approveNomination = async (req, res) => {
   const id = req.params.id;
   try {
@@ -172,6 +198,11 @@ exports.approveNomination = async (req, res) => {
   }
 };
 
+/*
+  Purpose: Reject a pending nomination with a provided reason. Updates status and notifies the student.
+  Parameters: req - expects params.id and body.reason; res - returns confirmation.
+  Returns: JSON message 'Nomination rejected and student notified' on success.
+*/
 exports.rejectNomination = async (req, res) => {
   const id = req.params.id;
   const { reason } = req.body;

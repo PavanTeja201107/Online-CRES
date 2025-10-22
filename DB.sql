@@ -174,10 +174,6 @@ CREATE TABLE VoteAnonymous (
   CONSTRAINT fk_voteanonymous_election FOREIGN KEY (election_id) REFERENCES Election(election_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-
--- Migration: Add last_login_at column to Admin table for last login tracking
--- Date: 2025-10-21
-
 -- ALTER TABLE Admin 
 -- ADD COLUMN last_login_at DATETIME DEFAULT NULL 
 -- AFTER password_hash;

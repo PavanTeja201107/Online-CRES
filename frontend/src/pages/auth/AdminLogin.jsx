@@ -1,3 +1,16 @@
+/**
+ * Page: AdminLogin
+ *
+ * Allows administrators to log in to the system using their admin ID and password.
+ *
+ * Features:
+ *   - Handles login form and authentication
+ *   - Redirects to dashboard on success
+ *   - Handles last login timestamp
+ *
+ * Usage:
+ *   Used in authentication routes for admin access.
+ */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminLogin } from '../../api/authApi';

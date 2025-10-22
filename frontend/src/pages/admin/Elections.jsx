@@ -1,3 +1,17 @@
+/**
+ * Page: AdminElections
+ *
+ * Allows administrators to create and manage elections, including setting nomination and voting periods.
+ *
+ * Features:
+ *   - Lists all elections
+ *   - Provides a form to create new elections with validation
+ *   - Allows notification of voting and nomination openings
+ *
+ * Usage:
+ *   Rendered as part of the admin dashboard routes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getElections, createElection, notifyVotingOpen, notifyNominationOpen } from '../../api/electionApi';

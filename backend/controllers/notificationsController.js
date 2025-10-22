@@ -1,5 +1,11 @@
 const pool = require('../config/db');
 
+/*
+  Purpose: Build a small notifications feed for the logged-in student based on active elections in their class.
+  Parameters: req - authenticated student request (req.user required); res - returns array of notice objects.
+  Returns: JSON array of notices with type, election_id, message, and timestamp.
+  Notes: This is a lightweight feed derived from Election rows (no separate notifications table).
+*/
 exports.getMyNotifications = async (req, res) => {
   try {
     if (!req.user || req.user.role !== 'STUDENT') return res.status(403).json({ error: 'Forbidden' });

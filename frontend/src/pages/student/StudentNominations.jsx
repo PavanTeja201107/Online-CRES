@@ -1,3 +1,17 @@
+/**
+ * Page: StudentNominations
+ *
+ * Allows students to submit their nomination for class elections, view policy, and upload manifesto/photo.
+ *
+ * Features:
+ *   - Fetches active election and nomination policy
+ *   - Allows policy acceptance and nomination submission
+ *   - Displays error and success messages
+ *
+ * Usage:
+ *   Rendered as part of the student dashboard routes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyActiveElection } from '../../api/electionApi';

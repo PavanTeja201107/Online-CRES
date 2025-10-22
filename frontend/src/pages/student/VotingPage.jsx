@@ -1,4 +1,16 @@
-
+/**
+ * Page: VotingPage
+ *
+ * Allows students to vote in class elections after accepting the voting policy.
+ *
+ * Features:
+ *   - Fetches active election and voting policy
+ *   - Handles policy acceptance and vote submission
+ *   - Displays error and success messages
+ *
+ * Usage:
+ *   Rendered as part of the student dashboard routes.
+ */
 export default function VotingPage() {
   const [election, setElection] = useState(null);
   const [policy, setPolicy] = useState(null);

@@ -1,3 +1,18 @@
+/**
+ * AuthContext & AuthProvider
+ *
+ * Provides authentication state and methods to the React application using Context API.
+ * Handles login, logout, token storage, auto-logout, and last login tracking.
+ *
+ * Exports:
+ *   - AuthContext: The context object for authentication state.
+ *   - AuthProvider: The provider component that wraps the app and supplies auth state/methods.
+ *
+ * Usage:
+ *   Wrap your app with <AuthProvider> in main.jsx or App.jsx.
+ *   Use useContext(AuthContext) or the useAuth() hook to access auth state and actions.
+ */
+
 import { createContext, useState, useContext, useEffect, useRef } from 'react';
 
 export const AuthContext = createContext();

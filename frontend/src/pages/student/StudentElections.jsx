@@ -1,3 +1,17 @@
+/**
+ * Page: StudentElections
+ *
+ * Allows students to view their active and past class elections, including nomination and voting periods.
+ *
+ * Features:
+ *   - Lists active and past elections
+ *   - Shows nomination and voting timelines
+ *   - Displays status badges
+ *
+ * Usage:
+ *   Rendered as part of the student dashboard routes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { getMyActiveElection, getMyElections } from '../../api/electionApi';
 import Navbar from '../../components/Navbar';

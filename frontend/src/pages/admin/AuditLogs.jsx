@@ -1,3 +1,17 @@
+/**
+ * Page: AuditLogs
+ *
+ * Allows administrators to view and filter audit logs for monitoring user actions and system events.
+ *
+ * Features:
+ *   - Fetches and displays audit logs
+ *   - Provides filters for date, user, action type, and role
+ *   - Displays details for each log entry
+ *
+ * Usage:
+ *   Rendered as part of the admin dashboard routes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getAuditLogs } from '../../api/auditApi';

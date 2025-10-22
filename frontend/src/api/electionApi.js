@@ -1,3 +1,16 @@
+/**
+ * API: electionApi
+ *
+ * Provides functions to interact with election-related backend endpoints, including creation,
+ * retrieval, and notification of elections. Uses axios for HTTP requests.
+ *
+ * Exports:
+ *   - createElection, getElections, notifyVotingOpen, notifyNominationOpen, getMyActiveElection, getMyElections
+ *
+ * Usage:
+ *   import { createElection, getElections } from './electionApi';
+ */
+
 import axios from './axiosInstance';
 
 // create election

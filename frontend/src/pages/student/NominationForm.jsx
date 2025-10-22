@@ -1,3 +1,18 @@
+/**
+ * Page: NominationForm
+ *
+ * Allows students to submit their nomination for class elections, view and accept nomination policy,
+ * and upload manifesto/photo. Also fetches and displays the student's current nomination if it exists.
+ *
+ * Features:
+ *   - Fetches available elections and nomination policy
+ *   - Allows policy acceptance and nomination submission
+ *   - Displays error and success messages
+ *
+ * Usage:
+ *   Rendered as part of the student dashboard routes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyElections } from '../../api/electionApi';

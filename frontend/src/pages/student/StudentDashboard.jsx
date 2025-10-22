@@ -1,3 +1,18 @@
+/**
+ * Page: StudentDashboard
+ *
+ * Provides an overview dashboard for students, displaying active elections, notifications,
+ * and quick links to election actions.
+ *
+ * Features:
+ *   - Shows current/active election details
+ *   - Displays notifications and last login banner
+ *   - Provides quick navigation links
+ *
+ * Usage:
+ *   Rendered as the main landing page for student users after login.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';

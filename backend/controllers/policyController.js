@@ -2,7 +2,16 @@
 const pool = require('../config/db');
 const logAction = require('../utils/logAction');
 
+/*
+  Purpose: Expose endpoints for retrieving, accepting, and updating election-related policies.
+  Notes: The system keeps exactly two policies: 'Nomination Policy' and 'Voting Policy'.
+*/
+
 // Get both policies by name
+/*
+  Purpose: Retrieve the two canonical policies (Nomination and Voting) used by the system.
+  Parameters: req - not used; res - returns array of policy records.
+*/
 exports.getPolicies = async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM Policy WHERE name IN ('Nomination Policy', 'Voting Policy') ORDER BY FIELD(name, 'Nomination Policy', 'Voting Policy')");

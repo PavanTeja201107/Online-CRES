@@ -1,3 +1,18 @@
+/**
+ * Page: AdminDashboard
+ *
+ * Provides an overview dashboard for administrators, displaying statistics and quick links
+ * to key management areas such as students, elections, and nominations.
+ *
+ * Features:
+ *   - Displays statistics (students, elections, nominations)
+ *   - Provides navigation links to admin features
+ *   - Shows last login banner
+ *
+ * Usage:
+ *   Rendered as the main landing page for admin users after login.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';

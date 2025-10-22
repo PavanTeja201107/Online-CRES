@@ -1,3 +1,17 @@
+/**
+ * Component: StudentArea
+ *
+ * Provides the main routing structure for all student-related pages, including login, dashboard,
+ * elections, nominations, voting, and results. Handles role-based redirects and route protection.
+ *
+ * Features:
+ *   - Defines all student routes and their components
+ *   - Redirects non-student users to their appropriate dashboard
+ *   - Uses ProtectedRoute and GuestRoute for access control
+ *
+ * Usage:
+ *   Used as the main student area entry point in the app's router.
+ */
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import StudentLogin from './student/StudentLogin';

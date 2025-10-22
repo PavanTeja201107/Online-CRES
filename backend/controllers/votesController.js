@@ -9,6 +9,12 @@ const { v4: uuidv4 } = require('uuid');
  * Returns or creates a token for the logged-in student for the given election.
  * (We issue token server-side and return it to the session only.)
  */
+/*
+  Purpose: Return an existing unused voting token for the student or create a new one.
+  Parameters: req - authenticated student request; params.electionId required.
+              res - returns the plaintext token (for frontend use) and status.
+  Notes: Token plaintext is returned here; ensure HTTPS is used in production.
+*/
 exports.getOrCreateTokenForStudent = async (req, res) => {
   const studentId = req.user.id;
   const electionId = req.params.electionId;
@@ -69,6 +75,12 @@ exports.getOrCreateTokenForStudent = async (req, res) => {
  * Body: { token, candidate_id, election_id }
  * Transactional: lock token and voter status, insert anonymous vote, anonymize token.
  */
+/*
+  Purpose: Cast a vote using a valid token. This operation is transactional and anonymous.
+  Parameters: req - body must include token, candidate_id, election_id; req.user is student.
+              res - returns success or descriptive error.
+  Notes: Token is invalidated and anonymized; vote is recorded in VoteAnonymous table.
+*/
 exports.castVote = async (req, res) => {
   const ip = req.ip;
   const userId = req.user.id; // logged-in student (but we won't store as voter->candidate)
@@ -165,6 +177,11 @@ exports.castVote = async (req, res) => {
   }
 };
 
+/*
+  Purpose: Retrieve election results and candidate vote tallies.
+  Parameters: req - expects params.electionId; res - returns candidates and summary for ADMIN, or public candidate list for students when published.
+  Returns: JSON payload with candidates and summary (admin) or array of candidates (public).
+*/
 exports.getResults = async (req, res) => {
   try {
     const electionId = req.params.electionId;

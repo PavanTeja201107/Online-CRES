@@ -1,3 +1,17 @@
+/**
+ * Page: Vote
+ *
+ * Allows students to cast their vote in active class elections, view candidates, and accept voting policy.
+ *
+ * Features:
+ *   - Fetches active election and approved candidates
+ *   - Handles voting token and submission
+ *   - Displays policy and error/success messages
+ *
+ * Usage:
+ *   Rendered as part of the student dashboard routes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyActiveElection } from '../../api/electionApi';

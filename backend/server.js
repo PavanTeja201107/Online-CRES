@@ -7,6 +7,10 @@ const { NODE_ENV, PORT, allowlist } = require('./config/appConfig');
 
 const app = express();
 
+/*
+  Purpose: Setup global middleware for the Express app (security, parsing, CORS, rate-limiting).
+  Notes: CORS allowlist is provided by config/appConfig. Rate limiter is permissive in development.
+*/
 function setupMiddleware(app) {
   app.use(helmet());
   app.use(express.json());
@@ -37,6 +41,9 @@ setupMiddleware(app);
 
 
 // routes
+/*
+  Purpose: Mount API route modules and health endpoints.
+*/
 function setupRoutes(app) {
   app.use('/api/auth', require('./routes/auth'));
   app.use('/api/elections', require('./routes/elections'));
@@ -53,6 +60,10 @@ function setupRoutes(app) {
 
 setupRoutes(app);
 
+/*
+  Maintenance job: runs periodically to perform background tasks (cleanup OTPs, auto-close/activate elections, etc.).
+  Note: Currently scheduled with a 1s interval for development/demo. Consider increasing interval in production (e.g., 1m).
+*/
 const maintenanceJob = require('./utils/maintenanceJob');
 setInterval(maintenanceJob, 1000);
 

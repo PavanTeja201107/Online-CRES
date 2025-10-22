@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+// Nomination endpoints: students submit, admins approve/reject
 const { verifyToken, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/nominationsController');
 

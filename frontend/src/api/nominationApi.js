@@ -1,3 +1,16 @@
+/**
+ * API: nominationApi
+ *
+ * Provides functions to interact with nomination-related backend endpoints, including submitting nominations
+ * and retrieving nominations for elections. Uses axios for HTTP requests.
+ *
+ * Exports:
+ *   - submitNomination, listByElection, listApprovedByElection, getMyNomination
+ *
+ * Usage:
+ *   import { submitNomination } from './nominationApi';
+ */
+
 import axios from './axiosInstance';
 
 // backend expects JSON { election_id, manifesto, photo_url }

@@ -1,7 +1,13 @@
 /**
- * Formats a last login timestamp into a professional, human-readable string
+ * Utility: formatLastLogin
+ *
+ * Formats a last login timestamp into a professional, human-readable string for display in the UI.
+ *
  * @param {string} timestamp - ISO 8601 timestamp string or MySQL DATETIME
- * @returns {string} - Formatted date string (e.g., "October 21, 2025 at 9:23 PM")
+ * @returns {string|null} - Formatted date string (e.g., "October 21, 2025 at 9:23 PM") or null if invalid
+ *
+ * Usage:
+ *   formatLastLogin('2025-10-21T21:23:00Z');
  */
 export function formatLastLogin(timestamp) {
   if (!timestamp) return null;

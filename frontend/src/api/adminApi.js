@@ -1,3 +1,18 @@
+/**
+ * API: adminApi
+ *
+ * Provides functions to interact with admin-related backend endpoints, including class and student management,
+ * and admin profile operations. Uses axios for HTTP requests.
+ *
+ * Exports:
+ *   - listClasses, createClass, deleteClass
+ *   - listStudents, getStudent, createStudent, updateStudent, deleteStudent, resetStudentPassword
+ *   - getAdminProfile, updateAdminProfile
+ *
+ * Usage:
+ *   import { listClasses, createClass } from './adminApi';
+ */
+
 import axios from './axiosInstance';
 
 // Classes

@@ -1,5 +1,9 @@
 const express = require('express');
 const router = express.Router();
+/*
+	Purpose: Authentication-related routes (admin login, student login/OTP, password reset).
+	Notes: Rate-limiting applied to OTP endpoints to mitigate abuse.
+*/
 const AuthController = require('../controllers/authController');
 const { body, validationResult } = require('express-validator');
 const { verifyToken } = require('../middleware/auth');

@@ -1,3 +1,16 @@
+/**
+ * API: authApi
+ *
+ * Provides authentication-related API functions for admin and student login, OTP verification,
+ * and password reset flows. Uses axios for HTTP requests.
+ *
+ * Exports:
+ *   - adminLogin, studentLogin, verifyOtp, requestPasswordReset, resetPassword
+ *
+ * Usage:
+ *   import { adminLogin, studentLogin } from './authApi';
+ */
+
 import axios from './axiosInstance';
 
 // admin login

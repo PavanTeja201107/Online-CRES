@@ -1,3 +1,16 @@
+/**
+ * Page: ChangePassword
+ *
+ * Allows users to set a new password after initial login or password reset.
+ *
+ * Features:
+ *   - Validates password length and confirmation
+ *   - Submits new password to backend
+ *   - Redirects to dashboard on success
+ *
+ * Usage:
+ *   Used in authentication flows for both students and admins.
+ */
 import React, { useState } from 'react';
 import Navbar from '../../components/Navbar';
 import axios from '../../api/axiosInstance';

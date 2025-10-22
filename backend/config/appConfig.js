@@ -1,6 +1,19 @@
 // config/appConfig.js
 require('dotenv').config();
 
+/**
+ * Application Configuration
+ * 
+ * This module provides configuration values for the application, including environment variables,
+ * server port, and allowed origins for CORS validation. It reads values from the environment
+ * and provides defaults for development.
+ * 
+ * Exports:
+ * - NODE_ENV: The current environment (e.g., 'development', 'production').
+ * - PORT: The port number the server listens on.
+ * - FRONTEND_ORIGIN: The origin URL for the frontend application.
+ * - allowlist: A Set of allowed origins for CORS validation.
+ */
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const PORT = process.env.PORT || 5500;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';

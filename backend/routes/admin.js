@@ -1,6 +1,7 @@
 // routes/admin.js
 const express = require('express');
 const router = express.Router();
+// Admin-only endpoints: protected by verifyToken and requireRole('ADMIN') middleware
 const { verifyToken, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/adminController');
 
