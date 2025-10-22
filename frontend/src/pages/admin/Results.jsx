@@ -156,7 +156,7 @@ export default function AdminResults() {
     const showWinner = isPublished && winner;
     
     return {
-      labels: results.map(r => r.candidate_name),
+      labels: results.map(r => `${r.candidate_name} (${r.candidate_id})`),
       datasets: [
         {
           label: 'Total Votes',
@@ -389,6 +389,9 @@ export default function AdminResults() {
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-gray-900 truncate">
                           {r.candidate_name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {r.candidate_id}
                         </div>
                       </div>
                       

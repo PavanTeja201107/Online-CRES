@@ -248,6 +248,9 @@ export default function VotePage() {
                     <div className="font-semibold text-lg text-gray-900">
                       {c.name}
                     </div>
+                    <div className="text-sm text-gray-500 font-medium">
+                      ID: {c.student_id}
+                    </div>
                     {c.manifesto && (
                       <p className="text-sm text-gray-600 mt-1 line-clamp-3">
                         {c.manifesto}
