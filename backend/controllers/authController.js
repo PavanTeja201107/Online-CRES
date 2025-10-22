@@ -344,7 +344,7 @@ exports.changePassword = async (req, res) => {
 
     // Update student record
     await pool.query(
-      'UPDATE Student SET password_hash = ?, must_change_password = FALSE, last_login = NOW() WHERE student_id = ?',
+      'UPDATE Student SET password_hash = ?, must_change_password = FALSE, last_login_at = NOW() WHERE student_id = ?',
       [hash, studentId]
     );
 

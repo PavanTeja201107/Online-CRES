@@ -146,9 +146,7 @@ exports.notifyVotingOpen = async (req, res) => {
               <li style="margin: 8px 0;">Submit your vote securely</li>
             </ol>
             
-            <p style="text-align: center; margin: 20px 0;">
-              <a href="[Voting Page URL]" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Cast Your Vote Now</a>
-            </p>
+            <p style="text-align: center; margin: 20px 0;">To Vote: Login -> Navigate to 'Vote' -> Select Candidate -> Submit Vote</p>
             
             <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
               <p style="margin: 0;"><strong>💡 Your vote matters!</strong> Every eligible student is encouraged to exercise their right to vote and help choose your Class Representative.</p>
@@ -217,9 +215,7 @@ exports.notifyNominationOpen = async (req, res) => {
               <li style="margin: 8px 0;">Complete and submit your nomination form with your manifesto</li>
             </ol>
             
-            <p style="text-align: center; margin: 20px 0;">
-              <a href="[Nomination Page URL]" style="display: inline-block; background-color: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Submit Your Nomination</a>
-            </p>
+            <p style="text-align: center; margin: 20px 0;">To Nominate: Login -> Navigate to 'Nomination' -> Fill Form -> Submit</p>
             
             <p>Please ensure you meet all eligibility criteria before submitting your nomination.</p>
             
@@ -354,9 +350,7 @@ exports.notifyResultsPublished = async (req, res) => {
             
             <p><strong>View Full Results:</strong></p>
             <p>You can view the complete election results, including vote counts and candidate information, by logging into the system.</p>
-            <p style="text-align: center; margin: 20px 0;">
-              <a href="[Results Page URL]" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Full Results Here</a>
-            </p>
+            <p style="text-align: center; margin: 20px 0;">To View: Login -> Navigate to 'Results' -> Select Election</p>
             
             <p>We appreciate everyone's participation in making this election a success!</p>
             

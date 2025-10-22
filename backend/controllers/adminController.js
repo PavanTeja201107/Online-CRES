@@ -322,9 +322,7 @@ exports.createStudent = async (req, res) => {
               <li style="margin: 8px 0;">Familiarize yourself with the election system</li>
             </ol>
             
-            <p style="text-align: center; margin: 20px 0;">
-              <a href="[Login Page URL]" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Login to College CR Election System</a>
-            </p>
+            <p style="text-align: center; margin: 20px 0;">Action Required: Login to System -> Complete Initial Setup</p>
             
             <p>If you notice any incorrect information in your profile or have questions about using the system, please contact our support team at <a href="mailto:[Support Email Address]" style="color: #2563eb;">[Support Email Address]</a>.</p>
             

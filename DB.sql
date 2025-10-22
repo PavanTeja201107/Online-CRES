@@ -5,8 +5,10 @@ CREATE TABLE Admin (
   email VARCHAR(100) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_login_at DATETIME NULL,
   PRIMARY KEY (admin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 CREATE TABLE Class (
   class_id INT NOT NULL AUTO_INCREMENT,
@@ -21,7 +23,7 @@ CREATE TABLE Student (
   class_id INT DEFAULT NULL,
   password_hash VARCHAR(255) NOT NULL,
   must_change_password tinyint(1) DEFAULT '1',
-  last_login DATETIME DEFAULT NULL,
+  last_login_at DATETIME DEFAULT NULL,
   email VARCHAR(100) DEFAULT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (student_id),
@@ -176,26 +178,27 @@ CREATE TABLE VoteAnonymous (
 -- Migration: Add last_login_at column to Admin table for last login tracking
 -- Date: 2025-10-21
 
-ALTER TABLE Admin 
-ADD COLUMN last_login_at DATETIME DEFAULT NULL 
-AFTER password_hash;
+-- ALTER TABLE Admin 
+-- ADD COLUMN last_login_at DATETIME DEFAULT NULL 
+-- AFTER password_hash;
 
--- Note: Student table already has 'last_login' column
--- For consistency, you might want to rename it to 'last_login_at' (optional)
+-- Note: Student table uses 'last_login_at' for consistency with Admin.last_login_at
+-- If your live database still has 'last_login', follow the migration steps below to add/copy/drop safely.
+-- Example (use with care):
 -- ALTER TABLE Student CHANGE COLUMN last_login last_login_at DATETIME DEFAULT NULL;
 
--- Add rejection_reason to Nomination table (if not exists)
-ALTER TABLE Nomination 
-ADD COLUMN IF NOT EXISTS rejection_reason TEXT NULL;
+-- -- Add rejection_reason to Nomination table (if not exists)
+-- ALTER TABLE Nomination 
+-- ADD COLUMN IF NOT EXISTS rejection_reason TEXT NULL;
 
--- Add is_published to Election table (if not exists)
-ALTER TABLE Election 
-ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE;
+-- -- Add is_published to Election table (if not exists)
+-- ALTER TABLE Election 
+-- ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE;
 
--- Add last_login_at to Student table (if not exists)
-ALTER TABLE Student 
-ADD COLUMN IF NOT EXISTS last_login_at DATETIME NULL;
+-- -- Add last_login_at to Student table (if not exists)
+-- ALTER TABLE Student 
+-- ADD COLUMN IF NOT EXISTS last_login_at DATETIME NULL;
 
--- Add last_login_at to Admin table (if not exists)
-ALTER TABLE Admin 
-ADD COLUMN IF NOT EXISTS last_login_at DATETIME NULL;
+-- -- Add last_login_at to Admin table (if not exists)
+-- ALTER TABLE Admin 
+-- ADD COLUMN IF NOT EXISTS last_login_at DATETIME NULL;

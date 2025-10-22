@@ -135,7 +135,7 @@ exports.approveNomination = async (req, res) => {
         subject: 'Nomination Approved - College CR Election System',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #059669;">Nomination Approved! 🎉</h2>
+            <h2 style="color: #059669;">Nomination Approved!</h2>
             <p>Dear ${nomination.name},</p>
             <p>Congratulations! We are pleased to inform you that your nomination for the CR election has been <strong>approved</strong>.</p>
             
