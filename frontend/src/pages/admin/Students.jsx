@@ -5,7 +5,7 @@ import Select from '../../components/ui/Select';
 
 export default function AdminStudents(){
   const [students, setStudents] = useState([]);
-  const [form, setForm] = useState({ name:'', email:'', date_of_birth:'', class_id:'' });
+  const [form, setForm] = useState({ student_id:'', name:'', email:'', date_of_birth:'', class_id:'' });
   const [err, setErr] = useState('');
   const [classes, setClasses] = useState([]);
   const [msg, setMsg] = useState('');
@@ -17,14 +17,7 @@ export default function AdminStudents(){
       setStudents(data);
     } catch (e){ setErr(e.response?.data?.error || 'Failed to load'); }
   };
-  useEffect(()=>{
-    load();
-    const fetchClasses = async () => { try { const c = await listClasses(); setClasses(c||[]); } catch {} };
-    fetchClasses();
-    const onVisibility = () => { if (!document.hidden) fetchClasses(); };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  },[]);
+  useEffect(()=>{ load(); (async()=>{ try{ const c = await listClasses(); setClasses(c||[]);}catch{} })(); },[]);
 
   const submit = async (e) => {
     e.preventDefault(); setErr(''); setMsg('');
@@ -34,18 +27,32 @@ export default function AdminStudents(){
         setErr('Only Gmail addresses are supported (example@gmail.com)');
         return;
       }
-      // Build payload; backend will auto-generate student_id as classIdXXXX
-      const payload = {
-        name: form.name,
-        email: form.email,
-        date_of_birth: form.date_of_birth,
-        class_id: form.class_id
-      };
-      const res = await createStudent(payload);
-      setMsg(`Student created. ID: ${res?.student_id} | Default password: ${res?.defaultPassword}`);
-      setForm({ name:'', email:'', date_of_birth:'', class_id:'' });
+
+      // Check for existing student with same ID
+      const existingStudent = students.find(s => s.student_id === form.student_id);
+      if (existingStudent) {
+        setErr('A student with this ID already exists');
+        return;
+      }
+
+      const res = await createStudent(form);
+      setMsg(`Student created. Default password: ${res?.defaultPassword || '(generated)'}`);
+      setForm({ student_id:'', name:'', email:'', date_of_birth:'', class_id:'' });
       load();
-    } catch (e){ setErr(e.response?.data?.error || 'Failed to create'); }
+    } catch (e) {
+      // Handle specific duplicate errors from backend
+      if (e.response?.data?.error?.includes('duplicate')) {
+        if (e.response.data.error.toLowerCase().includes('student_id')) {
+          setErr('A student with this ID already exists');
+        } else if (e.response.data.error.toLowerCase().includes('email')) {
+          setErr('A student with this email address already exists');
+        } else {
+          setErr('This student record already exists');
+        }
+      } else {
+        setErr(e.response?.data?.error || 'Failed to create student');
+      }
+    }
   };
 
   return (
@@ -57,11 +64,36 @@ export default function AdminStudents(){
         {msg && <div className="text-green-600 mb-2">{msg}</div>}
 
         <form onSubmit={submit} className="bg-white p-4 rounded shadow grid md:grid-cols-2 gap-3 mb-6">
+          <label className="text-sm">Student ID <span className="text-red-600">*</span>
+            <input 
+              placeholder="Student ID" 
+              value={form.student_id} 
+              onChange={e=>setForm({...form, student_id:e.target.value})} 
+              className={`border p-2 w-full mt-1 ${students.some(s => s.student_id === form.student_id) ? 'border-red-500' : ''}`}
+              required 
+            />
+            {students.some(s => s.student_id === form.student_id) && (
+              <div className="text-red-500 text-xs mt-1">This Student ID is already in use</div>
+            )}
+          </label>
           <label className="text-sm">Name <span className="text-red-600">*</span>
-            <input placeholder="Name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="border p-2 w-full mt-1" required />
+            <input 
+              placeholder="Name" 
+              value={form.name} 
+              onChange={e=>setForm({...form, name:e.target.value})} 
+              className="border p-2 w-full mt-1" 
+              required 
+            />
           </label>
           <label className="text-sm">Email <span className="text-red-600">*</span>
-            <input placeholder="Email" type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} className="border p-2 w-full mt-1" required />
+            <input 
+              placeholder="Email" 
+              type="email" 
+              value={form.email} 
+              onChange={e=>setForm({...form, email:e.target.value})} 
+              className="border p-2 w-full mt-1"
+              required 
+            />
           </label>
           <label className="text-sm">DOB <span className="text-red-600">*</span>
             <input type="date" placeholder="DOB" value={form.date_of_birth} onChange={e=>setForm({...form, date_of_birth:e.target.value})} className="border p-2 w-full mt-1" required />
@@ -72,8 +104,8 @@ export default function AdminStudents(){
               <option key={c.class_id} value={c.class_id}>{c.class_id} - {c.class_name || 'Class'}</option>
             ))}
           </Select>
-          <div className="text-xs text-gray-600 md:col-span-2">Default password rule: <strong>ddmmyyyy</strong>. Student ID will be automatically generated in the format <strong>classId_XXXX</strong>.</div>
-          <button disabled={!form.name || !form.email || !form.date_of_birth || !form.class_id} className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60">Create</button>
+          <div className="text-xs text-gray-600 md:col-span-2">Default password rule: ddmmyyyynnnn (first 4 of ID). Shown after creation.</div>
+          <button disabled={!form.student_id || !form.name || !form.email || !form.date_of_birth || !form.class_id} className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60">Create</button>
         </form>
 
         <div className="bg-white rounded shadow overflow-auto">
@@ -97,6 +129,7 @@ export default function AdminStudents(){
                   <td className="p-2">{s.class_id}</td>
                   <td className="p-2">{s.must_change_password ? 'Yes' : 'No'}</td>
                   <td className="p-2 flex gap-2">
+                    <button onClick={async()=>{ const r = await resetStudentPassword(s.student_id); setMsg(`Temp password for ${s.student_id}: ${r?.tempPassword || '(generated)'} (must change at first login)`); load(); }} className="text-indigo-600">Reset PW</button>
                     <button onClick={async()=>{ await deleteStudent(s.student_id); load(); }} className="text-red-600">Delete</button>
                   </td>
                 </tr>
