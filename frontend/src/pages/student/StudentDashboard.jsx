@@ -31,7 +31,7 @@ export default function StudentDashboard() {
 
   // Simulate notification toggle (replace with API call if needed)
   const handleToggleNotifications = () => {
-    setNotificationsEnabled(v => !v);
+    setNotificationsEnabled((v) => !v);
   };
 
   const quickLinks = [
@@ -48,8 +48,12 @@ export default function StudentDashboard() {
       <div className="container mx-auto px-6 py-10">
         <LastLoginBanner />
         <header className="mb-8">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Student Dashboard</h1>
-          <p className="mt-1 text-gray-600">Keep track of your elections, nominations, and notifications.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+            Student Dashboard
+          </h1>
+          <p className="mt-1 text-gray-600">
+            Keep track of your elections, nominations, and notifications.
+          </p>
         </header>
 
         {loading ? (
@@ -63,17 +67,24 @@ export default function StudentDashboard() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <div className="text-sm text-gray-500">Election ID</div>
-                      <div className="text-lg font-semibold text-gray-900">{election.election_id}</div>
+                      <div className="text-lg font-semibold text-gray-900">
+                        {election.election_id}
+                      </div>
                     </div>
                     <div className="sm:text-right">
                       <div className="text-sm text-gray-500">Voting Window</div>
                       <div className="text-lg font-semibold text-gray-900">
-                        {new Date(election.voting_start).toLocaleString()} – {new Date(election.voting_end).toLocaleString()}
+                        {new Date(election.voting_start).toLocaleString()} –{' '}
+                        {new Date(election.voting_end).toLocaleString()}
                       </div>
                     </div>
                     <div className="sm:col-span-2 mt-4 grid grid-cols-2 gap-3 sm:flex sm:flex-row">
                       {quickLinks.slice(0, 4).map((l) => (
-                        <Link key={l.to} to={l.to} className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-800 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50/60 hover:text-indigo-700">
+                        <Link
+                          key={l.to}
+                          to={l.to}
+                          className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-800 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50/60 hover:text-indigo-700"
+                        >
                           {l.label}
                         </Link>
                       ))}
@@ -88,11 +99,19 @@ export default function StudentDashboard() {
                 <h2 className="mb-3 text-xl font-bold text-gray-900">Quick Links</h2>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {quickLinks.map((l) => (
-                    <Link key={l.to} to={l.to} className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50/60">
+                    <Link
+                      key={l.to}
+                      to={l.to}
+                      className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-50/60"
+                    >
                       <span className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-100 text-indigo-600">
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4 1.5 1.5L11 17 7.5 13.5 9 12z"/></svg>
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M9 12l2 2 4-4 1.5 1.5L11 17 7.5 13.5 9 12z" />
+                        </svg>
                       </span>
-                      <span className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">{l.label}</span>
+                      <span className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">
+                        {l.label}
+                      </span>
                     </Link>
                   ))}
                 </div>
@@ -111,12 +130,17 @@ export default function StudentDashboard() {
                     {notificationsEnabled ? 'Enabled' : 'Disabled'}
                   </button>
                 </div>
-                {(!notices || notices.length === 0 || !notificationsEnabled) ? (
+                {!notices || notices.length === 0 || !notificationsEnabled ? (
                   <div className="text-gray-600">No notifications yet.</div>
                 ) : (
                   <ul className="space-y-3">
                     {notices.slice(0, 3).map((n, idx) => {
-                      const kind = n.type === 'RESULTS_PUBLISHED' ? 'success' : n.type === 'VOTING_OPEN' ? 'info' : 'warning';
+                      const kind =
+                        n.type === 'RESULTS_PUBLISHED'
+                          ? 'success'
+                          : n.type === 'VOTING_OPEN'
+                            ? 'info'
+                            : 'warning';
                       let message = n.message;
                       if (n.type === 'RESULTS_PUBLISHED') {
                         message = `Results published for Election #${n.election_id}`;
@@ -125,7 +149,8 @@ export default function StudentDashboard() {
                         <li key={idx}>
                           <Alert kind={kind}>
                             <div className="text-sm">
-                              <span className="font-medium">Election #{n.election_id}:</span> {message}
+                              <span className="font-medium">Election #{n.election_id}:</span>{' '}
+                              {message}
                             </div>
                           </Alert>
                         </li>

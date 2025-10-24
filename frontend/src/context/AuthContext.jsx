@@ -75,10 +75,16 @@ export const AuthProvider = ({ children }) => {
       setLastLogin(lastLoginAt);
       // Format message
       const date = new Date(lastLoginAt);
-      const formatted = date.toLocaleString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric',
-        hour: 'numeric', minute: '2-digit', hour12: true
-      }).replace(/,([^,]*)$/, ' at$1');
+      const formatted = date
+        .toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        })
+        .replace(/,([^,]*)$/, ' at$1');
       setLastLoginMessage(`For your security, your last login was on ${formatted}.`);
     } else {
       // Clear last login if not provided (shouldn't happen, but safe)
@@ -103,10 +109,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, lastLogin, lastLoginMessage, setLastLoginMessage }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, lastLogin, lastLoginMessage, setLastLoginMessage }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
-
-

@@ -15,7 +15,7 @@ import NominationForm from './student/NominationForm';
 import VotePage from './student/Vote';
 import ResultsPage from './student/ElectionResults';
 
-export default function StudentArea(){
+export default function StudentArea() {
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -28,17 +28,80 @@ export default function StudentArea(){
 
   return (
     <Routes>
-  <Route path="login" element={<GuestRoute><StudentLogin/></GuestRoute>} />
-  {/** Do NOT use GuestRoute here: after OTP verification we log the user in, and GuestRoute would redirect to dashboard before we can route to change-password */}
-  <Route path="verify-otp" element={<VerifyOtp/>} />
-      <Route path="change-password" element={<ProtectedRoute role="STUDENT"><ChangePassword/></ProtectedRoute>} />
-  <Route path="reset-password" element={<GuestRoute><ResetPassword/></GuestRoute>} />
-      <Route path="dashboard" element={<ProtectedRoute role="STUDENT"><StudentDashboard/></ProtectedRoute>} />
-      <Route path="election" element={<ProtectedRoute role="STUDENT"><ElectionPage/></ProtectedRoute>} />
-      <Route path="nomination" element={<ProtectedRoute role="STUDENT"><NominationForm/></ProtectedRoute>} />
-      <Route path="vote" element={<ProtectedRoute role="STUDENT"><VotePage/></ProtectedRoute>} />
-      <Route path="results" element={<ProtectedRoute role="STUDENT"><ResultsPage/></ProtectedRoute>} />
-      <Route path="profile" element={<ProtectedRoute role="STUDENT"><StudentProfile/></ProtectedRoute>} />
+      <Route
+        path="login"
+        element={
+          <GuestRoute>
+            <StudentLogin />
+          </GuestRoute>
+        }
+      />
+      {/** Do NOT use GuestRoute here: after OTP verification we log the user in, and GuestRoute would redirect to dashboard before we can route to change-password */}
+      <Route path="verify-otp" element={<VerifyOtp />} />
+      <Route
+        path="change-password"
+        element={
+          <ProtectedRoute role="STUDENT">
+            <ChangePassword />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="reset-password"
+        element={
+          <GuestRoute>
+            <ResetPassword />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute role="STUDENT">
+            <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="election"
+        element={
+          <ProtectedRoute role="STUDENT">
+            <ElectionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="nomination"
+        element={
+          <ProtectedRoute role="STUDENT">
+            <NominationForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="vote"
+        element={
+          <ProtectedRoute role="STUDENT">
+            <VotePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="results"
+        element={
+          <ProtectedRoute role="STUDENT">
+            <ResultsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="profile"
+        element={
+          <ProtectedRoute role="STUDENT">
+            <StudentProfile />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
-  )
+  );
 }

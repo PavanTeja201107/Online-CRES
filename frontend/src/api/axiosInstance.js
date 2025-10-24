@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:5500/api',
-  withCredentials: true
+  withCredentials: true,
 });
 
 axiosInstance.interceptors.request.use((config) => {
@@ -19,17 +19,25 @@ axiosInstance.interceptors.response.use(
     const reqUrl = err?.config?.url || '';
     const token = localStorage.getItem('token');
     // don't auto-redirect when the 401 comes from auth endpoints (login/verify) or when there's no token
-    const isAuthEndpoint = reqUrl.includes('/auth/login') || reqUrl.includes('/auth/admin/login') || reqUrl.includes('/auth/verify-otp') || reqUrl.includes('/auth/request-reset') || reqUrl.includes('/auth/reset-password') || reqUrl.includes('/auth/change-password');
+    const isAuthEndpoint =
+      reqUrl.includes('/auth/login') ||
+      reqUrl.includes('/auth/admin/login') ||
+      reqUrl.includes('/auth/verify-otp') ||
+      reqUrl.includes('/auth/request-reset') ||
+      reqUrl.includes('/auth/reset-password') ||
+      reqUrl.includes('/auth/change-password');
 
     if (status === 401 && token && !isAuthEndpoint) {
       console.error('Unauthorized (401) received from API for protected request. Clearing auth.');
       localStorage.removeItem('token');
       localStorage.removeItem('role');
       // redirect to login
-      try { window.location.href = '/'; } catch (e) {}
+      try {
+        window.location.href = '/';
+      } catch (e) {}
     }
     return Promise.reject(err);
-  }
+  },
 );
 
 export default axiosInstance;

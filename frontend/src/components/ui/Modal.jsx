@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Modal({isOpen, onClose, title, children, footer}){
+export default function Modal({ isOpen, onClose, title, children, footer }) {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

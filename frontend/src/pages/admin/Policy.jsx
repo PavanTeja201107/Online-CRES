@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import axios from '../../api/axiosInstance';
@@ -14,21 +13,33 @@ export default function AdminPolicy() {
     try {
       const { data } = await axios.get('/policy/all');
       // Filter for only Nomination Policy and Voting Policy
-      const filtered = (data || []).filter(p => p.name === 'Nomination Policy' || p.name === 'Voting Policy');
+      const filtered = (data || []).filter(
+        (p) => p.name === 'Nomination Policy' || p.name === 'Voting Policy',
+      );
       setPolicies(filtered);
-      setEditText(Object.fromEntries(filtered.map(p => [p.policy_id, p.policy_text])));
-    } catch (e) { setErr(e.response?.data?.error || 'Failed to load'); }
+      setEditText(Object.fromEntries(filtered.map((p) => [p.policy_id, p.policy_text])));
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Failed to load');
+    }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   // Update policy text/version only
   const update = async (policy) => {
-    setErr(''); setMsg('');
+    setErr('');
+    setMsg('');
     try {
-      await axios.put('/policy/update', { name: policy.name, policy_text: editText[policy.policy_id] });
+      await axios.put('/policy/update', {
+        name: policy.name,
+        policy_text: editText[policy.policy_id],
+      });
       setMsg('Policy updated');
       load();
-    } catch (e) { setErr(e.response?.data?.error || 'Failed to update'); }
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Failed to update');
+    }
   };
 
   return (
@@ -49,14 +60,14 @@ export default function AdminPolicy() {
               </tr>
             </thead>
             <tbody>
-              {policies.map(p => (
+              {policies.map((p) => (
                 <tr key={p.policy_id} className="border-b">
                   <td className="p-2 font-semibold">{p.name}</td>
                   <td className="p-2">{p.version}</td>
                   <td className="p-2">
                     <textarea
                       value={editText[p.policy_id] || ''}
-                      onChange={e => setEditText({ ...editText, [p.policy_id]: e.target.value })}
+                      onChange={(e) => setEditText({ ...editText, [p.policy_id]: e.target.value })}
                       className="border p-2 w-full h-24"
                     />
                   </td>
@@ -64,12 +75,19 @@ export default function AdminPolicy() {
                     <button
                       className="bg-indigo-600 text-white px-4 py-2 rounded"
                       onClick={() => update(p)}
-                    >Update</button>
+                    >
+                      Update
+                    </button>
                   </td>
                 </tr>
               ))}
               {!policies.length && (
-                <tr><td className="p-2 text-gray-500" colSpan="4">No policies found. Only two policies are allowed: Nomination Policy and Voting Policy.</td></tr>
+                <tr>
+                  <td className="p-2 text-gray-500" colSpan="4">
+                    No policies found. Only two policies are allowed: Nomination Policy and Voting
+                    Policy.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

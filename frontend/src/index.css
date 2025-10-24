@@ -3,7 +3,14 @@
 @tailwind utilities;
 
 body {
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial;
 }
 
 /* Toast animations */
@@ -30,5 +37,7 @@ body {
 }
 
 .animate-slide-in {
-  animation: slide-in 0.4s ease-out, fade-in 0.4s ease-out;
+  animation:
+    slide-in 0.4s ease-out,
+    fade-in 0.4s ease-out;
 }

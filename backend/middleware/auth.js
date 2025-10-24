@@ -9,20 +9,28 @@ async function verifyToken(req, res, next) {
   }
   const token = auth.split(' ')[1];
   try {
-  const payload = jwt.verify(token, process.env.JWT_SECRET);
-  // verify session exists, role matches, and not expired
-  const [rows] = await pool.query('SELECT * FROM Session WHERE session_id = ? AND user_id = ? AND role = ?', [payload.sessionId, payload.userId, payload.role]);
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    // verify session exists, role matches, and not expired
+    const [rows] = await pool.query(
+      'SELECT * FROM Session WHERE session_id = ? AND user_id = ? AND role = ?',
+      [payload.sessionId, payload.userId, payload.role]
+    );
     if (!rows.length) return res.status(401).json({ error: 'Invalid session' });
     const session = rows[0];
     if (new Date(session.expiry_time) < new Date()) {
       return res.status(401).json({ error: 'Session expired' });
     }
     // normalize user object
-    req.user = { id: payload.userId, role: payload.role, sessionId: payload.sessionId };
+    req.user = {
+      id: payload.userId,
+      role: payload.role,
+      sessionId: payload.sessionId,
+    };
     next();
   } catch (err) {
     // clearer error for expired tokens
-    if (err && err.name === 'TokenExpiredError') return res.status(401).json({ error: 'Token expired' });
+    if (err && err.name === 'TokenExpiredError')
+      return res.status(401).json({ error: 'Token expired' });
     console.error('verifyToken error:', err && err.message ? err.message : err);
     return res.status(401).json({ error: 'Invalid token' });
   }
@@ -31,7 +39,8 @@ async function verifyToken(req, res, next) {
 function requireRole(role) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
-    if (req.user.role !== role) return res.status(403).json({ error: 'Forbidden' });
+    if (req.user.role !== role)
+      return res.status(403).json({ error: 'Forbidden' });
     next();
   };
 }

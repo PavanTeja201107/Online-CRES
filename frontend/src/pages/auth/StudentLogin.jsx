@@ -28,11 +28,24 @@ export default function StudentLogin() {
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow w-80">
         <h2 className="text-xl font-semibold mb-4">Student Login</h2>
         {error && <p className="text-red-600 mb-2">{error}</p>}
-        <Input value={studentId} onChange={(e)=>setStudentId(e.target.value)} placeholder="Student ID" required />
+        <Input
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          placeholder="Student ID"
+          required
+        />
         <div className="h-3" />
-        <Input value={password} onChange={(e)=>setPassword(e.target.value)} type="password" placeholder="Password" required />
+        <Input
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          type="password"
+          placeholder="Password"
+          required
+        />
         <div className="h-4" />
-        <Button className="w-full" type="submit">Login</Button>
+        <Button className="w-full" type="submit">
+          Login
+        </Button>
       </form>
     </div>
   );

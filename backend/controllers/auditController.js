@@ -6,11 +6,26 @@ exports.listAudit = async (req, res) => {
     let sql = 'SELECT * FROM AuditLog WHERE 1=1';
     const params = [];
 
-    if (user_id) { sql += ' AND user_id = ?'; params.push(user_id); }
-    if (role) { sql += ' AND role = ?'; params.push(role); }
-    if (action_type) { sql += ' AND action_type = ?'; params.push(action_type); }
-    if (from) { sql += ' AND timestamp >= ?'; params.push(from); }
-    if (to) { sql += ' AND timestamp <= ?'; params.push(to); }
+    if (user_id) {
+      sql += ' AND user_id = ?';
+      params.push(user_id);
+    }
+    if (role) {
+      sql += ' AND role = ?';
+      params.push(role);
+    }
+    if (action_type) {
+      sql += ' AND action_type = ?';
+      params.push(action_type);
+    }
+    if (from) {
+      sql += ' AND timestamp >= ?';
+      params.push(from);
+    }
+    if (to) {
+      sql += ' AND timestamp <= ?';
+      params.push(to);
+    }
 
     sql += ' ORDER BY timestamp DESC LIMIT ?';
     params.push(parseInt(limit));

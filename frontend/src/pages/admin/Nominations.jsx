@@ -56,7 +56,7 @@ export default function AdminNominations() {
 
   const handleApprove = async () => {
     if (!selectedNomination) return;
-    
+
     setIsSubmitting(true);
     try {
       await axios.put(`/nominations/${selectedNomination.nomination_id}/approve`);
@@ -88,7 +88,7 @@ export default function AdminNominations() {
     setIsSubmitting(true);
     try {
       await axios.put(`/nominations/${selectedNomination.nomination_id}/reject`, {
-        reason: rejectionReason.trim()
+        reason: rejectionReason.trim(),
       });
       setSuccess('Nomination rejected and student has been notified via email.');
       setShowRejectModal(false);
@@ -114,32 +114,31 @@ export default function AdminNominations() {
       <Navbar />
       <div className="container mx-auto px-6 py-8">
         <h1 className="text-2xl font-bold mb-4">Nominations</h1>
-        
+
         {err && (
-          <div className="text-red-600 mb-4 p-3 bg-red-50 rounded border border-red-200">
-            {err}
-          </div>
+          <div className="text-red-600 mb-4 p-3 bg-red-50 rounded border border-red-200">{err}</div>
         )}
-        
+
         {success && (
           <div className="text-green-600 mb-4 p-3 bg-green-50 rounded border border-green-200">
             {success}
           </div>
         )}
-        
+
         <div className="bg-white p-4 rounded shadow mb-4">
           <Select label="Election" value={electionId} onChange={handleChange}>
             <option value="">-- Select Election --</option>
-            {elections.map(e => (
+            {elections.map((e) => (
               <option key={e.election_id} value={e.election_id}>
-                {e.election_id} - Class {e.class_id} {e.class_name ? `(${e.class_name})` : ''} — {new Date(e.nomination_start).toLocaleDateString()}
+                {e.election_id} - Class {e.class_id} {e.class_name ? `(${e.class_name})` : ''} —{' '}
+                {new Date(e.nomination_start).toLocaleDateString()}
               </option>
             ))}
           </Select>
         </div>
 
         <div className="bg-white rounded shadow">
-          {noms.map(n => {
+          {noms.map((n) => {
             const decided = n.status === 'APPROVED' || n.status === 'REJECTED';
             return (
               <div key={n.nomination_id} className="p-4 border-b last:border-b-0">
@@ -148,15 +147,17 @@ export default function AdminNominations() {
                     <div className="font-semibold text-lg text-gray-900">
                       {n.name || n.student_id}
                     </div>
-                    <div className="text-sm text-gray-600 mb-2">
-                      Student ID: {n.student_id}
-                    </div>
+                    <div className="text-sm text-gray-600 mb-2">Student ID: {n.student_id}</div>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`inline-block px-3 py-1 rounded text-sm font-semibold ${
-                        n.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                        n.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span
+                        className={`inline-block px-3 py-1 rounded text-sm font-semibold ${
+                          n.status === 'APPROVED'
+                            ? 'bg-green-100 text-green-800'
+                            : n.status === 'REJECTED'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
                         {n.status}
                       </span>
                     </div>
@@ -171,12 +172,22 @@ export default function AdminNominations() {
                     {n.rejection_reason && (
                       <div className="mt-2 p-3 bg-red-50 border-l-4 border-red-500 rounded text-sm">
                         <div className="flex items-start gap-2">
-                          <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+                          <svg
+                            className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                           <div>
                             <strong className="text-red-900 block">Rejection Reason:</strong>
-                            <p className="text-red-700 mt-1 whitespace-pre-wrap">{n.rejection_reason}</p>
+                            <p className="text-red-700 mt-1 whitespace-pre-wrap">
+                              {n.rejection_reason}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -206,11 +217,18 @@ export default function AdminNominations() {
                   <strong>Student ID:</strong> {selectedNomination.student_id}
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  <strong>Status:</strong> <span className={`font-semibold ${
-                    selectedNomination.status === 'APPROVED' ? 'text-green-600' :
-                    selectedNomination.status === 'REJECTED' ? 'text-red-600' :
-                    'text-yellow-600'
-                  }`}>{selectedNomination.status}</span>
+                  <strong>Status:</strong>{' '}
+                  <span
+                    className={`font-semibold ${
+                      selectedNomination.status === 'APPROVED'
+                        ? 'text-green-600'
+                        : selectedNomination.status === 'REJECTED'
+                          ? 'text-red-600'
+                          : 'text-yellow-600'
+                    }`}
+                  >
+                    {selectedNomination.status}
+                  </span>
                 </div>
               </div>
 
@@ -274,7 +292,8 @@ export default function AdminNominations() {
             <div className="space-y-4">
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
                 <p className="text-sm text-yellow-800">
-                  <strong>⚠️ Important:</strong> The rejection reason will be sent to the student via email.
+                  <strong>⚠️ Important:</strong> The rejection reason will be sent to the student
+                  via email.
                 </p>
               </div>
 

@@ -7,7 +7,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useToast } from '../../components/ui/ToastProvider';
 
-export default function VerifyOtp(){
+export default function VerifyOtp() {
   const [otp, setOtp] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,17 +24,17 @@ export default function VerifyOtp(){
       console.log('Verifying OTP for', studentId);
       setLoading(true);
       const res = await verifyOtp(studentId, otp);
-      
+
       // backend returns token and maybe role/user
       if (res.token) {
         // Extract last login timestamp from response (it's in res.user.last_login_at)
         const lastLoginAt = res.user?.last_login_at || null;
-        
+
         // Save token via context (this will store lastLoginAt in localStorage)
         login(res.token, res.role || 'STUDENT', lastLoginAt);
-        
+
         push('Login successful', 'success');
-        
+
         if (res.must_change_password) {
           navigate('/student/change-password');
         } else {
@@ -57,13 +57,36 @@ export default function VerifyOtp(){
       <div className="container mx-auto px-6 py-20 flex justify-center">
         <form onSubmit={submit} className="bg-white p-6 rounded shadow w-80">
           <h2 className="text-xl font-semibold mb-4 text-indigo-700">Verify OTP</h2>
-          <p className="text-sm mb-3">OTP was sent to the email linked to student ID <strong>{studentId || '...'}</strong></p>
+          <p className="text-sm mb-3">
+            OTP was sent to the email linked to student ID <strong>{studentId || '...'}</strong>
+          </p>
           {!state?.studentId && (
-            <Input label="Student ID" required value={studentIdInput} onChange={e=>setStudentIdInput(e.target.value)} placeholder="Student ID (if not auto-filled)" className="mb-2" />
+            <Input
+              label="Student ID"
+              required
+              value={studentIdInput}
+              onChange={(e) => setStudentIdInput(e.target.value)}
+              placeholder="Student ID (if not auto-filled)"
+              className="mb-2"
+            />
           )}
           {err && <p className="text-red-600 mb-2">{err}</p>}
-          <Input label="OTP" required value={otp} onChange={e=>setOtp(e.target.value)} placeholder="Enter OTP" className="mb-3" />
-          <Button disabled={loading || !otp || (!state?.studentId && !studentIdInput)} className="w-full" type="submit" loading={loading}>{loading ? 'Verifying...' : 'Verify'}</Button>
+          <Input
+            label="OTP"
+            required
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            placeholder="Enter OTP"
+            className="mb-3"
+          />
+          <Button
+            disabled={loading || !otp || (!state?.studentId && !studentIdInput)}
+            className="w-full"
+            type="submit"
+            loading={loading}
+          >
+            {loading ? 'Verifying...' : 'Verify'}
+          </Button>
         </form>
       </div>
     </div>

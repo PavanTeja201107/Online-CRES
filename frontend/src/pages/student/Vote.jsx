@@ -24,7 +24,7 @@ export default function VotePage() {
       try {
         const e = await getMyActiveElection();
         setElection(e);
-        
+
         // Fetch candidates with manifesto
         const list = await listApprovedByElection(e.election_id);
         const normalize = (url) => {
@@ -39,8 +39,8 @@ export default function VotePage() {
             return url;
           }
         };
-        setCandidates((list || []).map(c => ({ ...c, photo_url: normalize(c.photo_url) })));
-        
+        setCandidates((list || []).map((c) => ({ ...c, photo_url: normalize(c.photo_url) })));
+
         try {
           const p = await getPolicy('Voting Policy');
           setPolicy(p);
@@ -64,14 +64,14 @@ export default function VotePage() {
       }
 
       const res = await getVoteToken(election.election_id);
-      
+
       // Check if response indicates already voted
       if (res.status === 'already_voted') {
         setAlreadyVoted(true);
         setErr('You have already cast your vote for this election.');
         return;
       }
-      
+
       setToken(res.token);
       setMsg('Token issued. You can now cast your vote.');
     } catch (e) {
@@ -92,13 +92,13 @@ export default function VotePage() {
         setErr('Please select a candidate and obtain a token.');
         return;
       }
-      
+
       const res = await castVote({
         token,
         candidate_id: selectedCandidateId,
-        election_id: election.election_id
+        election_id: election.election_id,
       });
-      
+
       setMsg(res?.message || 'Your vote was recorded successfully');
       setToken('');
       setSelectedCandidateId('');
@@ -188,11 +188,9 @@ export default function VotePage() {
         {/* Candidate List - Simplified Radio Button UI */}
         {!alreadyVoted && token && candidates.length > 0 && (
           <div className="space-y-4 mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">
-              Select Your Candidate
-            </h2>
-            
-            {candidates.map(c => (
+            <h2 className="text-xl font-semibold text-gray-800 mb-3">Select Your Candidate</h2>
+
+            {candidates.map((c) => (
               <div
                 key={c.student_id}
                 className={`bg-white border-2 rounded-lg p-4 transition-all ${
@@ -245,16 +243,10 @@ export default function VotePage() {
 
                   {/* Candidate Info */}
                   <div className="flex-1">
-                    <div className="font-semibold text-lg text-gray-900">
-                      {c.name}
-                    </div>
-                    <div className="text-sm text-gray-500 font-medium">
-                      ID: {c.student_id}
-                    </div>
+                    <div className="font-semibold text-lg text-gray-900">{c.name}</div>
+                    <div className="text-sm text-gray-500 font-medium">ID: {c.student_id}</div>
                     {c.manifesto && (
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-3">
-                        {c.manifesto}
-                      </p>
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-3">{c.manifesto}</p>
                     )}
                   </div>
                 </label>

@@ -1,4 +1,3 @@
-
 export default function VotingPage() {
   const [election, setElection] = useState(null);
   const [policy, setPolicy] = useState(null);
@@ -35,10 +34,17 @@ export default function VotingPage() {
   };
 
   const handleVote = async () => {
-    setError(''); setSuccess('');
+    setError('');
+    setSuccess('');
     try {
-      if (!candidateId) { setError('Select a candidate.'); return; }
-      if (!election) { setError('No active election.'); return; }
+      if (!candidateId) {
+        setError('Select a candidate.');
+        return;
+      }
+      if (!election) {
+        setError('No active election.');
+        return;
+      }
       const tokenRes = await getVoteToken(election.election_id);
       const token = tokenRes.token;
       await castVote({ token, candidate_id: candidateId, election_id: election.election_id });
@@ -48,9 +54,21 @@ export default function VotingPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-gray-50"><Navbar /><div className="container mx-auto px-6 py-20">Loading</div></div>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="container mx-auto px-6 py-20">Loading</div>
+      </div>
+    );
 
-  if (error) return <div className="min-h-screen bg-gray-50"><Navbar /><div className="container mx-auto px-6 py-20 text-red-600">{error}</div></div>;
+  if (error)
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="container mx-auto px-6 py-20 text-red-600">{error}</div>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -61,16 +79,29 @@ export default function VotingPage() {
           <div className="mb-6 p-4 bg-white rounded shadow">
             <h2 className="text-lg font-semibold mb-2">Voting Policy</h2>
             <div className="text-gray-700 whitespace-pre-line mb-4">{policy.policy_text}</div>
-            <button onClick={handleAcceptPolicy} className="bg-indigo-600 text-white px-4 py-2 rounded">Accept Policy</button>
+            <button
+              onClick={handleAcceptPolicy}
+              className="bg-indigo-600 text-white px-4 py-2 rounded"
+            >
+              Accept Policy
+            </button>
           </div>
         )}
         {accepted && (
           <div className="mb-6 p-4 bg-white rounded shadow">
             <h2 className="text-lg font-semibold mb-2">Cast Your Vote</h2>
-            <label className="block mb-3">Candidate ID
-              <input value={candidateId} onChange={e=>setCandidateId(e.target.value)} className="border p-2 w-full mt-1" placeholder="Enter Candidate ID" />
+            <label className="block mb-3">
+              Candidate ID
+              <input
+                value={candidateId}
+                onChange={(e) => setCandidateId(e.target.value)}
+                className="border p-2 w-full mt-1"
+                placeholder="Enter Candidate ID"
+              />
             </label>
-            <button onClick={handleVote} className="bg-emerald-600 text-white px-4 py-2 rounded">Vote</button>
+            <button onClick={handleVote} className="bg-emerald-600 text-white px-4 py-2 rounded">
+              Vote
+            </button>
             {success && <div className="mt-3 text-green-600">{success}</div>}
             {error && <div className="mt-3 text-red-600">{error}</div>}
           </div>

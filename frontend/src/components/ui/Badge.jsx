@@ -9,6 +9,12 @@ const COLORS = {
   red: 'bg-red-600',
 };
 
-export default function Badge({color='gray', children, className=''}){
-  return <span className={`inline-block px-2 py-1 rounded text-white text-xs ${COLORS[color]} ${className}`}>{children}</span>;
+export default function Badge({ color = 'gray', children, className = '' }) {
+  return (
+    <span
+      className={`inline-block px-2 py-1 rounded text-white text-xs ${COLORS[color]} ${className}`}
+    >
+      {children}
+    </span>
+  );
 }

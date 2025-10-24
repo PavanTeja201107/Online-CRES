@@ -9,7 +9,7 @@ const defaultOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:5174',
-  'http://127.0.0.1:5174'
+  'http://127.0.0.1:5174',
 ];
 const configuredOrigin = FRONTEND_ORIGIN ? [FRONTEND_ORIGIN] : [];
 const allowlist = new Set([...configuredOrigin, ...defaultOrigins]);
@@ -18,5 +18,5 @@ module.exports = {
   NODE_ENV,
   PORT,
   FRONTEND_ORIGIN,
-  allowlist
+  allowlist,
 };

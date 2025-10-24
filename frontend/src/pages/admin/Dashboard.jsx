@@ -15,7 +15,9 @@ function StatCard({ title, value, accent = 'indigo', children }) {
   };
   return (
     <div className="group relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 transition hover:shadow-xl">
-      <div className={`absolute inset-x-0 -top-24 h-40 bg-gradient-to-b ${accentMap[accent]} opacity-10 blur-2xl transition group-hover:opacity-20`} />
+      <div
+        className={`absolute inset-x-0 -top-24 h-40 bg-gradient-to-b ${accentMap[accent]} opacity-10 blur-2xl transition group-hover:opacity-20`}
+      />
       <div className="p-6">
         <div className="mb-3 text-sm font-semibold text-gray-500">{title}</div>
         <div className="text-4xl font-extrabold tracking-tight text-gray-900">{value}</div>
@@ -34,7 +36,9 @@ function QuickLink({ to, label, svg }) {
       <span className="grid h-10 w-10 place-items-center rounded-lg bg-indigo-100 text-indigo-600">
         {svg}
       </span>
-      <span className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">{label}</span>
+      <span className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">
+        {label}
+      </span>
     </Link>
   );
 }
@@ -56,33 +60,33 @@ function Dashboard() {
           getElections().catch(() => []),
         ]);
 
-        const activeElectionsList = (elections || []).filter(e => !!e.is_active);
+        const activeElectionsList = (elections || []).filter((e) => !!e.is_active);
         const activeElections = activeElectionsList.length;
-        const electionIds = (elections || []).map(e => e.election_id);
+        const electionIds = (elections || []).map((e) => e.election_id);
 
         const nominationsLists = await Promise.all(
-          electionIds.map(id => listByElection(id).catch(() => []))
+          electionIds.map((id) => listByElection(id).catch(() => [])),
         );
         const pendingNominationsList = nominationsLists
           .flat()
-          .filter(n => String(n.status || '').toUpperCase() === 'PENDING');
+          .filter((n) => String(n.status || '').toUpperCase() === 'PENDING');
         const pendingNominations = pendingNominationsList.length;
 
         // Details for pending nominations
-        const pendingDetails = pendingNominationsList.map(n => ({
+        const pendingDetails = pendingNominationsList.map((n) => ({
           student_id: n.student_id,
           election_id: n.election_id,
-          class_id: (elections.find(e => e.election_id === n.election_id) || {}).class_id,
+          class_id: (elections.find((e) => e.election_id === n.election_id) || {}).class_id,
         }));
 
         // Details for active elections (all nominations in active elections)
         const activeDetails = nominationsLists
           .flat()
-          .filter(n => activeElectionsList.some(e => e.election_id === n.election_id))
-          .map(n => ({
+          .filter((n) => activeElectionsList.some((e) => e.election_id === n.election_id))
+          .map((n) => ({
             student_id: n.student_id,
             election_id: n.election_id,
-            class_id: (elections.find(e => e.election_id === n.election_id) || {}).class_id,
+            class_id: (elections.find((e) => e.election_id === n.election_id) || {}).class_id,
           }));
 
         if (mounted) {
@@ -101,13 +105,25 @@ function Dashboard() {
       }
     };
     load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const stats = [
     { title: 'Total Students', value: loading ? '…' : totals.students, accent: 'indigo' },
-    { title: 'Active Elections', value: loading ? '…' : totals.activeElections, accent: 'emerald', onClick: () => setShowActive(v => !v) },
-    { title: 'Pending Nominations', value: loading ? '…' : totals.pendingNominations, accent: 'amber', onClick: () => setShowPending(v => !v) },
+    {
+      title: 'Active Elections',
+      value: loading ? '…' : totals.activeElections,
+      accent: 'emerald',
+      onClick: () => setShowActive((v) => !v),
+    },
+    {
+      title: 'Pending Nominations',
+      value: loading ? '…' : totals.pendingNominations,
+      accent: 'amber',
+      onClick: () => setShowPending((v) => !v),
+    },
   ];
 
   return (
@@ -117,7 +133,9 @@ function Dashboard() {
         <LastLoginBanner />
         <header className="mb-8">
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Admin Dashboard</h1>
-          <p className="mt-1 text-gray-600">Use the quick actions below to manage your elections ecosystem.</p>
+          <p className="mt-1 text-gray-600">
+            Use the quick actions below to manage your elections ecosystem.
+          </p>
         </header>
 
         <section className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

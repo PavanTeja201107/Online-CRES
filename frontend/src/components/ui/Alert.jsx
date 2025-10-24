@@ -8,15 +8,18 @@ const STYLES = {
 };
 
 export default function Alert({ kind = 'info', title, children, className = '' }) {
-  const leftBar = {
-    info: 'border-l-blue-400',
-    success: 'border-l-emerald-400',
-    warning: 'border-l-yellow-400',
-    danger: 'border-l-red-400',
-  }[kind] || 'border-l-blue-400';
+  const leftBar =
+    {
+      info: 'border-l-blue-400',
+      success: 'border-l-emerald-400',
+      warning: 'border-l-yellow-400',
+      danger: 'border-l-red-400',
+    }[kind] || 'border-l-blue-400';
 
   return (
-    <div className={`relative border ${STYLES[kind]} ${className} rounded-lg p-3 pl-4 border-l-4 ${leftBar} transition`}>      
+    <div
+      className={`relative border ${STYLES[kind]} ${className} rounded-lg p-3 pl-4 border-l-4 ${leftBar} transition`}
+    >
       {title && <div className="font-semibold mb-1">{title}</div>}
       <div className="text-sm">{children}</div>
     </div>

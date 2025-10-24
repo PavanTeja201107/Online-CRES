@@ -24,26 +24,30 @@ export default function AdminLogin() {
       }
       // if another role is logged in (e.g., STUDENT), clear it so admin can log in here
       if (role !== 'ADMIN') {
-        try { logout(); } catch (e) { /* ignore */ }
+        try {
+          logout();
+        } catch (e) {
+          /* ignore */
+        }
       }
     }
   }, []);
 
-  const submit = async e => {
+  const submit = async (e) => {
     e.preventDefault();
     setErr('');
     try {
       setLoading(true);
       const res = await adminLogin(adminId, password);
-      
+
       // Extract last login timestamp from response (it's in res.user.last_login_at)
       const lastLoginAt = res.user?.last_login_at || null;
-      
+
       // Save token via context (this will store lastLoginAt in localStorage)
       login(res.token, 'ADMIN', lastLoginAt);
-      
+
       push('Login successful', 'success');
-      
+
       navigate('/admin/dashboard');
     } catch (error) {
       console.error(error);
@@ -60,11 +64,16 @@ export default function AdminLogin() {
       <div className="container mx-auto px-6 py-20 flex justify-center">
         <form onSubmit={submit} className="bg-white p-8 rounded shadow w-full max-w-md">
           <h2 className="text-2xl mb-4 text-indigo-700">Administrator Sign In</h2>
-          {err && <div role="alert" className="text-red-600 mb-3">{err}</div>}
-          <label className="block mb-2 text-sm font-medium">Admin ID <span className="text-red-600">*</span>
+          {err && (
+            <div role="alert" className="text-red-600 mb-3">
+              {err}
+            </div>
+          )}
+          <label className="block mb-2 text-sm font-medium">
+            Admin ID <span className="text-red-600">*</span>
             <input
               value={adminId}
-              onChange={e=>setAdminId(e.target.value)}
+              onChange={(e) => setAdminId(e.target.value)}
               placeholder="Admin ID"
               aria-label="Admin ID"
               required
@@ -72,10 +81,11 @@ export default function AdminLogin() {
             />
           </label>
 
-          <label className="block mb-2 text-sm font-medium">Password <span className="text-red-600">*</span>
+          <label className="block mb-2 text-sm font-medium">
+            Password <span className="text-red-600">*</span>
             <input
               value={password}
-              onChange={e=>setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               type="password"
               aria-label="Password"
@@ -84,11 +94,16 @@ export default function AdminLogin() {
             />
           </label>
 
-          <button disabled={loading || !adminId || !password} className="w-full bg-indigo-600 text-white py-2 rounded disabled:opacity-60">
+          <button
+            disabled={loading || !adminId || !password}
+            className="w-full bg-indigo-600 text-white py-2 rounded disabled:opacity-60"
+          >
             {loading ? 'Logging in...' : 'Login'}
           </button>
           <div className="mt-3 text-right">
-            <a href="/admin/reset-password" className="text-sm text-indigo-600">Forgot password?</a>
+            <a href="/admin/reset-password" className="text-sm text-indigo-600">
+              Forgot password?
+            </a>
           </div>
         </form>
       </div>

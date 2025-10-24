@@ -6,7 +6,10 @@ function genToken() {
 
 function hashToken(token) {
   const salt = process.env.TOKEN_SALT || 'default_salt';
-  return crypto.createHash('sha256').update(token + salt).digest('hex');
+  return crypto
+    .createHash('sha256')
+    .update(token + salt)
+    .digest('hex');
 }
 
 function genBallotId() {

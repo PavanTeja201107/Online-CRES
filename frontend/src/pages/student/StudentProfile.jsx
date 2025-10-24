@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyProfile, requestPasswordReset, resetPassword } from '../../api/studentsApi';
 
-export default function StudentProfile(){
+export default function StudentProfile() {
   const [profile, setProfile] = useState(null);
   const [otpRequested, setOtpRequested] = useState(false);
   const [otp, setOtp] = useState('');
@@ -11,22 +11,23 @@ export default function StudentProfile(){
   const [msg, setMsg] = useState('');
   const [errMsg, setErrMsg] = useState('');
 
-  useEffect(()=>{
-    const fetch = async ()=>{
-      try{
+  useEffect(() => {
+    const fetch = async () => {
+      try {
         const res = await getMyProfile();
         setProfile(res);
-      }catch(err){
+      } catch (err) {
         console.error(err);
       }
     };
     fetch();
-  },[]);
+  }, []);
 
   const requestReset = async () => {
     try {
       if (!profile?.student_id) return;
-      setErrMsg(''); setMsg('');
+      setErrMsg('');
+      setMsg('');
       const res = await requestPasswordReset(profile.student_id);
       setMsg(res?.message || 'Reset OTP sent to your Gmail. Please enter it below.');
       setOtpRequested(true);
@@ -36,14 +37,28 @@ export default function StudentProfile(){
   };
 
   const submitReset = async (e) => {
-    e.preventDefault(); setErrMsg(''); setMsg('');
-    if (!otp || !newPw || !confirmPw) { setErrMsg('Please fill all fields'); return; }
-    if (newPw.length < 6) { setErrMsg('Password must be at least 6 characters'); return; }
-    if (newPw !== confirmPw) { setErrMsg('Passwords do not match'); return; }
+    e.preventDefault();
+    setErrMsg('');
+    setMsg('');
+    if (!otp || !newPw || !confirmPw) {
+      setErrMsg('Please fill all fields');
+      return;
+    }
+    if (newPw.length < 6) {
+      setErrMsg('Password must be at least 6 characters');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setErrMsg('Passwords do not match');
+      return;
+    }
     try {
       const r = await resetPassword(profile.student_id, otp, newPw);
       setMsg(r?.message || 'Password reset successful');
-      setOtp(''); setNewPw(''); setConfirmPw(''); setOtpRequested(false);
+      setOtp('');
+      setNewPw('');
+      setConfirmPw('');
+      setOtpRequested(false);
     } catch (e) {
       setErrMsg(e.response?.data?.error || 'Failed to reset password');
     }
@@ -77,26 +92,57 @@ export default function StudentProfile(){
               </div>
             </div>
             <div className="mt-6">
-              <button onClick={requestReset} className="bg-indigo-600 hover:bg-indigo-700 transition text-white px-4 py-2 rounded">Request Password Reset</button>
-              {(msg || errMsg) && <div className={`mt-3 text-sm ${errMsg? 'text-red-600':'text-green-600'}`}>{errMsg || msg}</div>}
+              <button
+                onClick={requestReset}
+                className="bg-indigo-600 hover:bg-indigo-700 transition text-white px-4 py-2 rounded"
+              >
+                Request Password Reset
+              </button>
+              {(msg || errMsg) && (
+                <div className={`mt-3 text-sm ${errMsg ? 'text-red-600' : 'text-green-600'}`}>
+                  {errMsg || msg}
+                </div>
+              )}
               {otpRequested && (
                 <form onSubmit={submitReset} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label className="text-sm">
                     OTP
-                    <input value={otp} onChange={e=>setOtp(e.target.value)} placeholder="Enter OTP" className="border p-2 w-full mt-1" required />
+                    <input
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      placeholder="Enter OTP"
+                      className="border p-2 w-full mt-1"
+                      required
+                    />
                   </label>
                   <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className="text-sm">
                       New Password
-                      <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="New password" className="border p-2 w-full mt-1" required />
+                      <input
+                        type="password"
+                        value={newPw}
+                        onChange={(e) => setNewPw(e.target.value)}
+                        placeholder="New password"
+                        className="border p-2 w-full mt-1"
+                        required
+                      />
                     </label>
                     <label className="text-sm">
                       Confirm Password
-                      <input type="password" value={confirmPw} onChange={e=>setConfirmPw(e.target.value)} placeholder="Confirm password" className="border p-2 w-full mt-1" required />
+                      <input
+                        type="password"
+                        value={confirmPw}
+                        onChange={(e) => setConfirmPw(e.target.value)}
+                        placeholder="Confirm password"
+                        className="border p-2 w-full mt-1"
+                        required
+                      />
                     </label>
                   </div>
                   <div className="sm:col-span-2">
-                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Set New Password</button>
+                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                      Set New Password
+                    </button>
                   </div>
                 </form>
               )}
@@ -105,5 +151,5 @@ export default function StudentProfile(){
         )}
       </main>
     </div>
-  )
+  );
 }
