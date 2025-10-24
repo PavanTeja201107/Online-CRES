@@ -105,7 +105,7 @@ exports.login = async (req, res) => {
       to: user.email,
       subject: 'Your Login OTP for the College CR Election System',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;'>
           <p>Your One-Time Password (OTP) for accessing the <strong>College CR Election System</strong> is:</p>
           
           <div style="background-color: #eff6ff; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">

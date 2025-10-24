@@ -4,16 +4,14 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const { NODE_ENV, PORT, allowlist } = require('./config/appConfig');
-
 const app = express();
-
-function setupMiddleware(app) {
+function setupMiddleware(app){
   app.use(helmet());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
   app.use(cors({
-    origin: (origin, callback) => {
+    origin: (origin, callback) =>{
       if (!origin) return callback(null, true);
       if (allowlist.has(origin)) return callback(null, true);
       return callback(new Error(`CORS not allowed from origin: ${origin}`));
