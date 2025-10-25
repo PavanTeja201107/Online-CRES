@@ -144,12 +144,8 @@ CREATE TABLE VotingToken (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
--
 -- Insert default policies
 INSERT INTO Policy (policy_id, name, policy_text, version, created_at) VALUES
-  (1, 'Nomination Policy', 'Default nomination policy text.', 1, NOW()),
-  (2, 'Voting Policy', 'Default voting policy text.', 1, NOW())
-ON DUPLICATE KEY UPDATE policy_text=VALUES(policy_text), version=VALUES(version);
   (
     1,
     'Nomination Policy',
@@ -167,6 +163,7 @@ ON DUPLICATE KEY UPDATE policy_text=VALUES(policy_text), version=VALUES(version)
 ON DUPLICATE KEY UPDATE
   policy_text = VALUES(policy_text),
   version = VALUES(version);
+ON DUPLICATE KEY UPDATE policy_texUES(policy_text), version=VALUES(version);
 
 CREATE TABLE VoterStatus (
   id INT NOT NULL AUTO_INCREMENT,
