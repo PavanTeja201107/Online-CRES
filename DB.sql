@@ -8,8 +8,14 @@ CREATE TABLE Admin (
   last_login_at DATETIME NULL,
   PRIMARY KEY (admin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-
+-- Insert a default admin user with hashed password 'admin123'
+INSERT INTO Admin (admin_id, name, email, password_hash)
+VALUES (
+  'pavan_admin',
+  'Pavan',
+  '<youremail>@gmail.com',
+  '$2b$10$8/jmCEJlFq3H6x.jNMSueOfHEtUrIcEmpF7Lhxt4JCA7frNYvMLnC'
+);
 CREATE TABLE Class (
   class_id INT NOT NULL AUTO_INCREMENT,
   class_name VARCHAR(100) NOT NULL,
