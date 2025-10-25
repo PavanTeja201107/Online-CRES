@@ -6,9 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint 'src/**/*.{js,jsx}'",
-    "lint:fix": "eslint 'src/**/*.{js,jsx}' --fix",
-    "format": "prettier --write 'src/**/*.{js,jsx,css,html}'",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,32 +20,21 @@
     "react-use": "^17.6.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.28.5",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
-    "eslint": "^8.57.1",
-    "eslint-config-airbnb": "^19.0.4",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-prettier": "^5.5.4",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^4.3.0",
-    "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
     "postcss": "^8.5.6",
-    "prettier": "^3.6.2",
     "tailwindcss": "^3.4.18",
     "vite": "npm:rolldown-vite@7.1.14"
   },
   "overrides": {
     "vite": "npm:rolldown-vite@7.1.14"
   },
-  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
-  "main": "eslint.config.js",
+  "description": "React + Vite frontend for Online-CRES.",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "main": "postcss.config.js"
 }
