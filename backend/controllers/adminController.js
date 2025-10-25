@@ -333,7 +333,11 @@ exports.createStudent = async (req, res) => {
         .status(400)
         .json({ error: 'Invalid date_of_birth format (YYYY-MM-DD)' });
 
-    // Always auto-generate student_id in the format: classId + 4-digit sequence (classIdXXXX)
+    /*
+     * Always auto-generate student_id in the format: CL{classId(>=2 digits)}S{4-digit sequence}
+     * - Example: class_id=1 -> CL01S0001, class_id=12 -> CL12S0001
+     * - Guarantees uniqueness by picking the smallest available 4-digit suffix not in use for the class
+     */
     const conn = await pool.getConnection();
     let student_id;
     let defaultPassword;
@@ -351,29 +355,48 @@ exports.createStudent = async (req, res) => {
         return res.status(400).json({ error: 'Invalid class_id' });
       }
 
-      // Lock rows for this class to avoid race conditions and find the max suffix used so far
-      const [lastRows] = await conn.query(
-        'SELECT student_id FROM Student WHERE class_id = ? ORDER BY student_id DESC LIMIT 1 FOR UPDATE',
+      /*
+       * Lock rows for this class to avoid race conditions and find the max suffix used so far
+       * Lock all existing students for this class to compute the smallest available suffix safely
+       */
+      const [existingRows] = await conn.query(
+        'SELECT student_id FROM Student WHERE class_id = ? FOR UPDATE',
         [class_id]
       );
-      let next = 1;
-      if (lastRows.length) {
-        const lastId = String(lastRows[0].student_id);
-        const prefix = `${class_id}_`;
-        const suffixPart = lastId.startsWith(prefix)
-          ? lastId.slice(prefix.length)
-          : lastId.slice(String(class_id).length + 1);
-        const parsed = parseInt(suffixPart, 10);
-        if (!isNaN(parsed)) next = parsed + 1;
+
+      const used = new Set();
+      for (const r of existingRows) {
+        const id = String(r.student_id || '');
+        // New format: CL{classId}S{suffix}
+        const m = /CL\d+S(\d{1,})$/.exec(id);
+        if (m && m[1]) {
+          const n = parseInt(m[1], 10);
+          if (!isNaN(n)) {
+            used.add(n);
+            continue;
+          }
+        }
+        // Legacy format: {classId}_{suffix} (e.g., 1_0001)
+        const legacy = /^(\d+)_([0-9]{1,})$/.exec(id);
+        if (legacy && legacy[2]) {
+          const n2 = parseInt(legacy[2], 10);
+          if (!isNaN(n2)) used.add(n2);
+        }
       }
 
+      const classPart = String(class_id).padStart(2, '0');
+      let candidate = 1;
       let attempts = 0;
-      while (attempts < 50) {
-        const suffix = String(next).padStart(4, '0');
-        student_id = `${class_id}_${suffix}`;
-        // Default password rule: ddmmyyyy
-        defaultPassword = `${dd}${mm}${yyyy}`.toLowerCase();
-        const hash = await bcrypt.hash(defaultPassword, 10);
+      const maxAttempts = 2000; // safety cap
+      // Default password rule: ddmmyyyy
+      defaultPassword = `${dd}${mm}${yyyy}`.toLowerCase();
+      const hash = await bcrypt.hash(defaultPassword, 10);
+
+      while (attempts < maxAttempts) {
+        // find smallest unused
+        while (used.has(candidate)) candidate += 1;
+        const suffix = String(candidate).padStart(4, '0');
+        student_id = `CL${classPart}S${suffix}`;
         try {
           await conn.query(
             'INSERT INTO Student (student_id, name, email, date_of_birth, class_id, password_hash, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -383,8 +406,9 @@ exports.createStudent = async (req, res) => {
           break;
         } catch (e) {
           if (e && e.code === 'ER_DUP_ENTRY') {
-            // someone inserted concurrently; try next number
-            next += 1;
+            // mark this candidate as used and try next
+            used.add(candidate);
+            candidate += 1;
             attempts += 1;
             continue;
           }
@@ -396,10 +420,10 @@ exports.createStudent = async (req, res) => {
         await conn.rollback();
         conn.release();
         return res
-          .status(409)
-          .json({
-            error: 'Failed to generate a unique Student ID. Please retry.',
-          });
+        .status(409)
+        .json({
+          error: 'Failed to generate a unique Student ID. Please retry.',
+        });
       }
 
       await logAction(req.user.id, req.user.role, req.ip, 'STUDENT_CREATED', {
