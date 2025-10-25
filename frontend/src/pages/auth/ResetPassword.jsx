@@ -53,10 +53,31 @@ export default function ResetPassword() {
     }
   };
 
+  const validatePassword = (password) => {
+    const lengthCheck = password.length >= 6;
+    const specialCharCheck = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const uppercaseCheck = /[A-Z]/.test(password);
+    const numberCheck = /[0-9]/.test(password);
+
+    if (!lengthCheck) return 'Password must be at least 6 characters long';
+    if (!specialCharCheck) return 'Password must contain at least one special character';
+    if (!uppercaseCheck) return 'Password must contain at least one uppercase letter';
+    if (!numberCheck) return 'Password must contain at least one number';
+
+    return null;
+  };
+
   const doReset = async (e) => {
     e.preventDefault();
     setErr('');
     setMsg('');
+
+    const validationError = validatePassword(newPassword);
+    if (validationError) {
+      setErr(validationError);
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await resetPassword(userId, otp, newPassword);

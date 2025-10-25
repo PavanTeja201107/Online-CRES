@@ -45,18 +45,31 @@ export default function StudentProfile() {
     }
   };
 
+  const validatePassword = (password) => {
+    const lengthCheck = password.length >= 6;
+    const specialCharCheck = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const uppercaseCheck = /[A-Z]/.test(password);
+    const numberCheck = /[0-9]/.test(password);
+
+    if (!lengthCheck) return 'Password must be at least 6 characters long';
+    if (!specialCharCheck) return 'Password must contain at least one special character';
+    if (!uppercaseCheck) return 'Password must contain at least one uppercase letter';
+    if (!numberCheck) return 'Password must contain at least one number';
+
+    return null;
+  };
+
   const submitReset = async (e) => {
     e.preventDefault();
     setErrMsg('');
     setMsg('');
-    if (!otp || !newPw || !confirmPw) {
-      setErrMsg('Please fill all fields');
+
+    const validationError = validatePassword(newPw);
+    if (validationError) {
+      setErrMsg(validationError);
       return;
     }
-    if (newPw.length < 6) {
-      setErrMsg('Password must be at least 6 characters');
-      return;
-    }
+
     if (newPw !== confirmPw) {
       setErrMsg('Passwords do not match');
       return;

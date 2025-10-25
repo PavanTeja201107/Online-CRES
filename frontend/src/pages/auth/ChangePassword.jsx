@@ -25,18 +25,36 @@ export default function ChangePassword() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const validatePassword = (password) => {
+    const lengthCheck = password.length >= 6;
+    const specialCharCheck = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const uppercaseCheck = /[A-Z]/.test(password);
+    const numberCheck = /[0-9]/.test(password);
+
+    if (!lengthCheck) return 'Password must be at least 6 characters long';
+    if (!specialCharCheck) return 'Password must contain at least one special character';
+    if (!uppercaseCheck) return 'Password must contain at least one uppercase letter';
+    if (!numberCheck) return 'Password must contain at least one number';
+
+    return null;
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setErr('');
     setMsg('');
-    if (newPassword.length < 6) {
-      setErr('Password must be at least 6 characters');
+
+    const validationError = validatePassword(newPassword);
+    if (validationError) {
+      setErr(validationError);
       return;
     }
+
     if (newPassword !== confirmPassword) {
       setErr('Passwords do not match');
       return;
     }
+
     try {
       setLoading(true);
       const res = await axios.post('/auth/change-password', { newPassword });
