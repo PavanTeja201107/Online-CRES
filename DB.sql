@@ -152,9 +152,23 @@ CREATE TABLE VotingToken (
 
 -- Insert default policies
 INSERT INTO Policy (policy_id, name, policy_text, version, created_at) VALUES
-  (1, 'Nomination Policy', 'Default nomination policy text.', 1, NOW()),
-  (2, 'Voting Policy', 'Default voting policy text.', 1, NOW())
-ON DUPLICATE KEY UPDATE policy_text=VALUES(policy_text), version=VALUES(version);
+  (
+    1,
+    'Nomination Policy',
+    'This policy outlines the process for nominating candidates. Members are allowed to propose nominations within the specified time frame. Each nomination must be supported by at least one other member. All nominations will be verified for eligibility before being accepted.',
+    1,
+    NOW()
+  ),
+  (
+    2,
+    'Voting Policy',
+    'This policy describes the procedure for conducting voting. All eligible members have the right to vote. Voting may be carried out through secure electronic means or by physical ballot. Results will be counted transparently and decisions will be finalized based on majority votes.',
+    1,
+    NOW()
+  )
+ON DUPLICATE KEY UPDATE
+  policy_text = VALUES(policy_text),
+  version = VALUES(version);
 
 CREATE TABLE VoterStatus (
   id INT NOT NULL AUTO_INCREMENT,
