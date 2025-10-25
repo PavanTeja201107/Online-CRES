@@ -1,3 +1,17 @@
+/*
+ * Page: VerifyOtp
+ *
+ * Allows students to verify their login by entering an OTP sent to their email.
+ *
+ * Features:
+ *   - Handles OTP input and verification
+ *   - Stores token and user info on success
+ *   - Redirects to dashboard or password change as needed
+ *
+ * Usage:
+ *   Used in authentication routes for student access.
+ */
+
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { verifyOtp } from '../../api/authApi';

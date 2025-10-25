@@ -1,3 +1,17 @@
+/*
+ * Page: StudentLogin
+ *
+ * Allows students to log in to the system using their student ID and password.
+ *
+ * Features:
+ *   - Handles login form and authentication
+ *   - Redirects to dashboard on success
+ *   - Handles OTP flow for verification
+ *
+ * Usage:
+ *   Used in authentication routes for student access.
+ */
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentLogin } from '../../api/authApi';

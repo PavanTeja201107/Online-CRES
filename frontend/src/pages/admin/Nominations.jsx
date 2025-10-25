@@ -1,3 +1,17 @@
+/*
+ * Page: AdminNominations
+ *
+ * Allows administrators to view, approve, and reject nominations for a selected election.
+ *
+ * Features:
+ *   - Fetches nominations for the selected election
+ *   - Supports viewing manifesto, approving, and rejecting nominations
+ *   - Displays modals for detailed actions
+ *
+ * Usage:
+ *   Rendered as part of the admin dashboard routes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getElections } from '../../api/electionApi';

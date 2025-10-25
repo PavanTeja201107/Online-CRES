@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+// Election management and student convenience endpoints. Protected by auth middleware.
 const { verifyToken, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/electionsController');
 
@@ -42,7 +43,9 @@ router.put(
   ctrl.publishResults
 );
 
-// Bulk operations
-// Removed unused bulk publish (automation handles publishing)
+/*
+ * Bulk operations
+ * Removed unused bulk publish (automation handles publishing)
+ */
 
 module.exports = router;

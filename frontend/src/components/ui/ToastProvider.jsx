@@ -2,6 +2,18 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 
 const ToastContext = createContext({ push: () => {}, pushLastLogin: () => {} });
 
+/*
+ * ToastProvider
+ *
+ * Purpose:
+ *   Provide a simple toast notification context with helpers to push messages.
+ *
+ * Parameters:
+ *   - children: application content that needs access to toast functions.
+ *
+ * Return value:
+ *   A context provider that renders children and a floating toast container.
+ */
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
@@ -22,7 +34,8 @@ export function ToastProvider({ children }) {
         isLastLogin: true,
       },
     ]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000); // Show for 5 seconds
+    // Show for 5 seconds
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
   }, []);
 
   return (

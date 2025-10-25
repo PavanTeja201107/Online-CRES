@@ -1,8 +1,30 @@
 /*
- Seed a test class with students, election, nominations, sessions etc.,
- then invoke adminController.deleteClass with force=true and verify cascades and cleanup.
- Run with: npm run test:force-delete
-*/
+ * Seed a test class with students, election, nominations, sessions etc.,
+ * then invoke adminController.deleteClass with force=true and verify cascades and cleanup.
+ * Run with: npm run test:force-delete
+ * Force Delete E2E Test Script
+ *
+ * Purpose:
+ * This script seeds a test class, students, election, nominations, and sessions, then invokes
+ * the adminController.deleteClass method with force=true to verify cascading deletes and cleanup.
+ * It is intended for end-to-end testing of the force-delete functionality in the admin module.
+ *
+ * Usage:
+ * Run with: npm run test:force-delete
+ *
+ * Steps Performed:
+ * - Ensures a test admin exists (creates if missing)
+ * - Creates a test class
+ * - Adds test students to the class
+ * - Inserts fake student sessions
+ * - (Further steps: creates election, nominations, votes, etc.)
+ * - Invokes force-delete and verifies all related data is removed
+ *
+ * Notes:
+ * - Uses environment variables for test admin credentials if provided
+ * - Uses direct DB queries for setup and cleanup
+ * - Prints progress and results to the console
+ */
 
 require('dotenv').config();
 const pool = require('../config/db');

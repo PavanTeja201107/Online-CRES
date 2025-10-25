@@ -27,6 +27,12 @@ const emailStyles = {
 };
 
 // =============== ADMIN PROFILE ===============
+/*
+ * Purpose: Retrieve the current admin's profile information.
+ * Parameters: req - authenticated request with req.user.adminId.
+ *   res - response object to send profile JSON.
+ * Returns: JSON with admin profile data on success.
+ */
 exports.getProfile = async (req, res) => {
   try {
     const adminId = req.user.id;
@@ -42,6 +48,13 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+
+/*
+ * Purpose: Update the admin's profile information (name, email, etc.).
+ * Parameters: req - authenticated request containing updated fields in body.
+ *   res - response with updated profile or error.
+ * Returns: JSON confirming update and returning new profile.
+ */
 exports.updateProfile = async (req, res) => {
   try {
     const adminId = req.user.id;
@@ -65,6 +78,11 @@ exports.updateProfile = async (req, res) => {
 };
 
 // =============== CLASS MANAGEMENT ===============
+/*
+ * Purpose: List all classes available to the admin.
+ * Parameters: req - request object; res - response to send classes list.
+ * Returns: JSON array of class records.
+ */
 exports.listClasses = async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM Class ORDER BY class_id');
@@ -75,6 +93,12 @@ exports.listClasses = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Create a new class record in the system.
+ * Parameters: req - expects body.name and other class metadata.
+ *   res - returns created class record.
+ * Returns: JSON of the newly created class.
+ */
 exports.createClass = async (req, res) => {
   try {
     const { class_name } = req.body;
@@ -95,6 +119,12 @@ exports.createClass = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Delete a class by id. This performs a cascade delete where applicable.
+ * Parameters: req - expects params.classId.
+ *   res - returns success message or error if constraints prevent deletion.
+ * Returns: JSON message confirming deletion.
+ */
 exports.deleteClass = async (req, res) => {
   try {
     const id = req.params.id;
@@ -239,6 +269,12 @@ exports.deleteClass = async (req, res) => {
 };
 
 // =============== STUDENT MANAGEMENT ===============
+/*
+ * Purpose: List students with optional filters (class, search, pagination).
+ * Parameters: req - may contain query parameters for filtering.
+ *   res - returns paginated students list.
+ * Returns: JSON with students array and pagination metadata.
+ */
 exports.listStudents = async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -267,6 +303,12 @@ exports.getStudent = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Create a new student account and send a welcome email with instructions.
+ * Parameters: req - expects body with student details (student_id, name, email, class_id).
+ *   res - returns created student record.
+ * Returns: JSON of the created student.
+ */
 exports.createStudent = async (req, res) => {
   try {
     const { name, email, date_of_birth, class_id } = req.body;
@@ -468,6 +510,12 @@ exports.createStudent = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Update an existing student's record.
+ * Parameters: req - expects params.studentId and body with fields to update.
+ *   res - returns updated student record.
+ * Returns: JSON of the updated student.
+ */
 exports.updateStudent = async (req, res) => {
   try {
     const id = req.params.id;
@@ -496,6 +544,12 @@ exports.updateStudent = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Delete a student account permanently.
+ * Parameters: req - expects params.studentId.
+ *   res - returns success or error message.
+ * Returns: JSON message confirming deletion.
+ */
 exports.deleteStudent = async (req, res) => {
   try {
     const id = req.params.id;
@@ -510,6 +564,12 @@ exports.deleteStudent = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Reset a student's password and email them a temporary password or OTP.
+ * Parameters: req - expects params.studentId.
+ * res - returns confirmation that reset communication was sent.
+ * Returns: JSON message 'Password reset sent' on success.
+ */
 exports.resetStudentPassword = async (req, res) => {
   try {
     const id = req.params.id;

@@ -1,3 +1,17 @@
+/**
+ * Page: AdminClasses
+ *
+ * Allows administrators to view, create, and manage classes, and see students in each class.
+ *
+ * Features:
+ *   - Lists all classes and students
+ *   - Provides search and filtering
+ *   - Allows creation and deletion of classes
+ *
+ * Usage:
+ *   Rendered as part of the admin dashboard routes.
+ */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import Modal from '../../components/ui/Modal';

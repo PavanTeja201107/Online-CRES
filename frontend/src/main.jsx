@@ -1,3 +1,7 @@
+/*
+ * Entry point for the React application. Sets up React Router, authentication context, and toast notifications.
+ * Renders the App component inside the root HTML element.
+ */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

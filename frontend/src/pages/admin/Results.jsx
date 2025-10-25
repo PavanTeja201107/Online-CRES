@@ -1,3 +1,17 @@
+/**
+ * Page: AdminResults
+ *
+ * Allows administrators to view the results of all class elections, including vote counts and visualizations.
+ * Uses Chart.js for bar charts.
+ *
+ * Features:
+ *   - Fetches and displays election results for selected election
+ *   - Shows vote breakdown and statistics
+ *   - Uses Chart.js for data visualization
+ *
+ * Usage:
+ *   Rendered as part of the admin dashboard routes.
+ */
 import React, { useEffect, useState, useMemo } from 'react';
 import Navbar from '../../components/Navbar';
 import { getElections } from '../../api/electionApi'; // Correct: Use getElections

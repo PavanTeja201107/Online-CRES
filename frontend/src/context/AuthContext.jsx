@@ -1,3 +1,18 @@
+/*
+ * AuthContext & AuthProvider
+ *
+ * Provides authentication state and methods to the React application using Context API.
+ * Handles login, logout, token storage, auto-logout, and last login tracking.
+ *
+ * Exports:
+ *   - AuthContext: The context object for authentication state.
+ *   - AuthProvider: The provider component that wraps the app and supplies auth state/methods.
+ *
+ * Usage:
+ *   Wrap your app with <AuthProvider> in main.jsx or App.jsx.
+ *   Use useContext(AuthContext) or the useAuth() hook to access auth state and actions.
+ */
+
 import { createContext, useState, useContext, useEffect, useRef } from 'react';
 
 export const AuthContext = createContext();
@@ -37,11 +52,13 @@ export const AuthProvider = ({ children }) => {
 
   const scheduleAutoLogout = (token) => {
     clearLogoutTimer();
-    const payload = decodeJwt(token);
-    if (!payload || !payload.exp) return;
-    const expiresAt = payload.exp * 1000; // exp is in seconds
-    const now = Date.now();
-    const delay = Math.max(0, expiresAt - now - 1000); // logout 1s before expiry
+  const payload = decodeJwt(token);
+  if (!payload || !payload.exp) return;
+  // exp is in seconds
+  const expiresAt = payload.exp * 1000;
+  const now = Date.now();
+  // logout 1s before expiry
+  const delay = Math.max(0, expiresAt - now - 1000);
     if (delay <= 0) {
       // already expired
       doLogout();
@@ -55,7 +72,8 @@ export const AuthProvider = ({ children }) => {
   const doLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    localStorage.removeItem('lastLoginAt'); // Clear last login on logout
+    // Clear last login on logout
+    localStorage.removeItem('lastLoginAt');
     setUser(null);
     setLastLogin(null);
     // force navigate to landing/login

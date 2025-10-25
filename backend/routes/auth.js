@@ -14,6 +14,16 @@ const otpLimiter = rateLimit({
     res.status(429).json({ error: 'Too many OTP attempts, try again later' }),
 });
 
+/*
+ * Auth routes
+ *
+ * Purpose:
+ * Handle authentication flows (admin login, student login/OTP, password reset).
+ *
+ * Parameters/Return:
+ * Defines validators and routes, uses middleware for token verification and rate limiting.
+ */
+
 // validators
 const loginValidator = [
   body('studentId')

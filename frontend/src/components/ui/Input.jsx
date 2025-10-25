@@ -1,5 +1,18 @@
 import React from 'react';
 
+/*
+ * Input
+ *
+ * Purpose:
+ * Simple labeled input wrapper that shows label, hint and error messages.
+ *
+ * Parameters:
+ * - label, required, hint, error, className: presentational props.
+ * - ...props: passed to the internal <input> element.
+ *
+ * Return value:
+ * A labeled input element with optional helper text.
+ */
 export default function Input({ label, required, hint, error, className = '', ...props }) {
   return (
     <label className={`block text-sm ${className}`}>

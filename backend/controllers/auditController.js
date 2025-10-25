@@ -1,5 +1,11 @@
 const pool = require('../config/db');
 
+/*
+ * Purpose: Retrieve audit log entries with optional filtering.
+ * Parameters: req.query may include user_id, role, action_type, from, to, limit.
+ * res - returns array of AuditLog records matching filters.
+ * Notes: AuditLog is the central immutable event store for security and operational actions.
+ */
 exports.listAudit = async (req, res) => {
   try {
     const { user_id, role, action_type, from, to, limit = 100 } = req.query;

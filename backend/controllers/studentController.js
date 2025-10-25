@@ -1,6 +1,11 @@
 // controllers/studentController.js
 const pool = require('../config/db');
 
+/*
+ * Purpose: Return profile information for the authenticated student.
+ * Parameters: req - authenticated request with req.user.id; res - returns student profile fields.
+ * Returns: JSON object with student details (id, name, email, class, dob, timestamps).
+ */
 exports.getMe = async (req, res) => {
   try {
     if (!req.user || req.user.role !== 'STUDENT')

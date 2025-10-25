@@ -10,6 +10,17 @@ import {
 } from '../../api/adminApi';
 import Select from '../../components/ui/Select';
 
+/*
+ * AdminStudents
+ *
+ * Purpose:
+ * Admin page for listing, creating and deleting students. Includes a simple
+ * form and a table of existing students.
+ *
+ * Parameters/Return:
+ * No props; returns an admin page React element that interacts with admin APIs.
+ */
+
 export default function AdminStudents() {
   const [students, setStudents] = useState([]);
   const [form, setForm] = useState({ name: '', email: '', date_of_birth: '', class_id: '' });

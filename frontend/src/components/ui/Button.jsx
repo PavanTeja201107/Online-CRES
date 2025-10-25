@@ -13,6 +13,19 @@ const SIZES = {
   lg: 'px-5 py-3',
 };
 
+/*
+ * Button
+ *
+ * Purpose:
+ * Render a styled button supporting variants, sizes, and a loading state.
+ *
+ * Parameters:
+ * - children: button label or nodes.
+ * - variant, size, loading, disabled, className: visual and state props.
+ *
+ * Return value:
+ * A HTML button element with composed classes.
+ */
 export default function Button({
   children,
   variant = 'primary',

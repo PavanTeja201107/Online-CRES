@@ -2,13 +2,28 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 
+/*
+ * Navbar
+ *
+ * Purpose:
+ * Render the top navigation bar with logo, links and user profile/menu.
+ *
+ * Parameters:
+ * None (uses auth hook and react-router hooks internally).
+ *
+ * Return value:
+ * A React element representing the site's header/navigation.
+ */
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false); // For mobile menu
-  const [isProfileOpen, setIsProfileOpen] = useState(false); // For profile dropdown
+  // For mobile menu
+  const [open, setOpen] = useState(false);
+  // For profile dropdown
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const location = useLocation();
-  const profileMenuRef = useRef(null); // Ref for dropdown
+  // Ref for dropdown
+  const profileMenuRef = useRef(null);
 
   // Close mobile nav when route changes
   useEffect(() => {

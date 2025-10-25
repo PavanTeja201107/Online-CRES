@@ -1,3 +1,17 @@
+/**
+ * Page: AdminPolicy
+ *
+ * Allows administrators to view and edit the Nomination Policy and Voting Policy texts.
+ *
+ * Features:
+ *   - Fetches all policies and filters for the two main types
+ *   - Allows editing and updating policy text
+ *   - Displays error and success messages
+ *
+ * Usage:
+ *   Rendered as part of the admin dashboard routes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import axios from '../../api/axiosInstance';

@@ -2,7 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/policyController');
-
+/*
+ * Policy routes
+ *
+ * Purpose:
+ * Endpoints to read, accept and manage policies. Some routes require admin role.
+ *
+ * Parameters/Return:
+ * Exports an Express router guarded by auth/role middleware.
+ */
 // Get both policies
 router.get('/', verifyToken, ctrl.getPolicies);
 // Accept a policy (requires policy_id)

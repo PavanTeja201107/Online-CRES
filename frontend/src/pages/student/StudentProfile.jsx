@@ -2,6 +2,15 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyProfile, requestPasswordReset, resetPassword } from '../../api/studentsApi';
 
+/*
+  StudentProfile
+
+  Purpose:
+  Display the current student's profile and provide a simple password reset flow.
+
+  Parameters/Return:
+  No props; returns a profile page component that uses auth-backed APIs.
+*/
 export default function StudentProfile() {
   const [profile, setProfile] = useState(null);
   const [otpRequested, setOtpRequested] = useState(false);

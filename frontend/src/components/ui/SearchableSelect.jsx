@@ -12,6 +12,19 @@ export default function SearchableSelect({
   getValue,
   ...props
 }) {
+  /*
+   * SearchableSelect
+   *
+   * Purpose:
+   * Provide a small searchable helper input with a paired select element.
+   *
+   * Parameters:
+   * - label, options, value, onChange, placeholder, required: basic select props.
+   * - display, getValue: helpers to render and extract option values.
+   *
+   * Return value:
+   * A composite React element combining a search box and a select dropdown.
+   */
   const [q, setQ] = useState('');
   const normalize = (s) => String(s || '').toLowerCase();
   const filtered = useMemo(() => {

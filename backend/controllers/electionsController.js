@@ -5,6 +5,12 @@ const { genToken, hashToken } = require('../utils/tokenUtils');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 
+/*
+ * Purpose: Create a new election with its configuration and schedule.
+ * Parameters: req (express request) - expects body with class_id, nomination_start, nomination_end, voting_start, voting_end.
+ *   res (express response) - used to send created election id or error.
+ * Returns: JSON { message, election_id } on success.
+ */
 exports.createElection = async (req, res) => {
   try {
     const {
@@ -106,6 +112,12 @@ function getElectionStatus(election) {
   return 'UNKNOWN';
 }
 
+
+/*
+ * Purpose: List all elections and compute their realtime status (UPCOMING, NOMINATION, VOTING, CLOSED).
+ * Parameters: req - optional query filters; res - sends array of election objects with added status.
+ * Returns: JSON array of elections with status.
+ */
 // List all elections (admin or student)
 exports.listElections = async (req, res) => {
   try {
@@ -125,6 +137,11 @@ exports.listElections = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Send announcement emails to all students in the election's class when voting opens.
+ * Parameters: req - expects params.id (election id); res - responds with success or error.
+ * Notes: Best-effort email sending; logs errors but doesn't abort DB state changes.
+ */
 // Notify students when voting opens (announcement only, no tokens)
 exports.notifyVotingOpen = async (req, res) => {
   try {
@@ -223,6 +240,11 @@ exports.notifyVotingOpen = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Send announcement emails to students that the nomination window is open.
+ * Parameters: req - expects params.id (election id); res - responds with success or error.
+ * Notes: Uses SMTP configuration; will return 400 if SMTP is not configured.
+ */
 // Notify students when nomination opens (announcement)
 exports.notifyNominationOpen = async (req, res) => {
   try {
@@ -316,6 +338,11 @@ exports.notifyNominationOpen = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Retrieve the currently active election for the logged-in student (by their class).
+ * Parameters: req - authenticated student request; res - returns the active election or 404.
+ * Returns: JSON election object when found.
+ */
 // Convenience: active election for the logged-in student based on their class
 exports.getMyActiveElection = async (req, res) => {
   try {
@@ -342,6 +369,11 @@ exports.getMyActiveElection = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: List elections for the logged-in student's class and include boolean flags for nomination_open, voting_open, ended.
+ * Parameters: req - authenticated student request; res - sends list of elections with computed booleans.
+ * Returns: JSON array.
+ */
 // List all elections for the logged-in student's class with computed status flags
 exports.getMyElections = async (req, res) => {
   try {
@@ -379,7 +411,13 @@ exports.getMyElections = async (req, res) => {
   }
 };
 
+
 // Notify students when election results are published
+/*
+ * Purpose: Notify students that election results have been published and include winner summary.
+ * Parameters: req - expects params.id (election id); res - returns recipients count on success.
+ * Notes: For privacy, full results require login; this is an announcement email.
+ */
 exports.notifyResultsPublished = async (req, res) => {
   try {
     const electionId = req.params.id;
@@ -486,6 +524,11 @@ exports.notifyResultsPublished = async (req, res) => {
   }
 };
 
+/*
+ * Purpose: Mark an election's results as published. Only allowed after voting end time.
+ * Parameters: req - expects params.id (election id); res - returns success or error.
+ * Returns: JSON message confirming publication.
+ */
 // Publish election results
 exports.publishResults = async (req, res) => {
   try {

@@ -1,3 +1,17 @@
+/*
+ * Page: StudentLogin (Auth)
+ *
+ * Allows students to log in using their student ID and password, triggering OTP verification.
+ *
+ * Features:
+ *   - Handles login form and authentication
+ *   - Sends OTP to email and redirects to verification page
+ *   - Displays error messages
+ *
+ * Usage:
+ *   Used in authentication routes for student access.
+ */
+
 import React, { useState } from 'react';
 import { studentLogin } from '../../api/authApi';
 import { useNavigate } from 'react-router-dom';

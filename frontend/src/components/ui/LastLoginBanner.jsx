@@ -1,6 +1,18 @@
 import React from 'react';
 import useAuth from '../../hooks/useAuth';
 
+/*
+ * LastLoginBanner
+ *
+ * Purpose:
+ * Show a dismissible banner with the user's last login message when present.
+ *
+ * Parameters:
+ * None directly; uses auth hook for message and setter.
+ *
+ * Return value:
+ * Returns a banner element or null when no message exists.
+ */
 export default function LastLoginBanner() {
   const { lastLoginMessage, setLastLoginMessage } = useAuth();
   if (!lastLoginMessage) return null;

@@ -16,6 +16,16 @@ import AdminPolicy from './pages/admin/Policy';
 import AuditLogs from './pages/admin/AuditLogs';
 import ResetPassword from './pages/auth/ResetPassword';
 
+/*
+  Landing
+
+  Purpose:
+  Minimal landing page that redirects authenticated users to their dashboard
+  and presents login links for unauthenticated visitors.
+
+  Parameters/Return:
+  No props; returns a small landing React element.
+*/
 function Landing() {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
@@ -66,6 +76,15 @@ function Landing() {
   );
 }
 
+/*
+  App
+
+  Purpose:
+  Define application routes and wire public, protected and guest routes.
+
+  Parameters/Return:
+  Returns the top-level React Router <Routes> element for the app.
+*/
 export default function App() {
   return (
     <Routes>

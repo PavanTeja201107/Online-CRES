@@ -1,5 +1,19 @@
 import React from 'react';
 
+/*
+ * Modal
+ *
+ * Purpose:
+ * A simple centered modal wrapper that renders title, content and optional footer.
+ *
+ * Parameters:
+ * - isOpen (bool): whether the modal is visible.
+ * - onClose (func): callback to close the modal.
+ * - title, children, footer: displayed pieces of the modal.
+ *
+ * Return value:
+ * A modal React element when open, or null when closed.
+ */
 export default function Modal({ isOpen, onClose, title, children, footer }) {
   if (!isOpen) return null;
   return (

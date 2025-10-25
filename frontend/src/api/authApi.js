@@ -1,3 +1,16 @@
+/*
+ * API: authApi
+ *
+ * Handles authentication requests: login, logout, password reset, and token refresh.
+ * Wraps axios instance to set headers and manage errors consistently.
+ *
+ * Exports:
+ *   - adminLogin, studentLogin, logout
+ *
+ * Usage:
+ *   import { adminLogin, studentLogin } from './authApi';
+ */
+
 import axios from './axiosInstance';
 
 // admin login

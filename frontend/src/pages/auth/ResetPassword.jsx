@@ -1,3 +1,17 @@
+/*
+ * Page: ResetPassword
+ *
+ * Allows users (students or admins) to request a password reset via OTP and set a new password.
+ *
+ * Features:
+ *   - Step-by-step flow: request OTP, enter OTP, set new password
+ *   - Handles both student and admin roles based on route or query param
+ *   - Displays error and success messages
+ *
+ * Usage:
+ *   Used in authentication routes for password recovery.
+ */
+
 import React, { useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { requestPasswordReset, resetPassword } from '../../api/studentsApi';

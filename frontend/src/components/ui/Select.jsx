@@ -1,6 +1,18 @@
 import React from 'react';
 
 export default function Select({ label, required, error, children, className = '', ...props }) {
+  /*
+   * Select
+   *
+   * Purpose:
+   * Render a labeled native select control with optional error messaging.
+   *
+   * Parameters:
+   * - label, required, error, children, className: styling and content props.
+   *
+   * Return value:
+   * A labeled <select> element.
+   */
   return (
     <label className={`block text-sm ${className}`}>
       {label && (

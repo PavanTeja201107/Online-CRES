@@ -96,6 +96,11 @@ npm install
 ```sh
 cd ../frontend
 npm install
+
+npm install chart.js react-chartjs-2 react-confetti react-use
+
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
 ```
 
 ---

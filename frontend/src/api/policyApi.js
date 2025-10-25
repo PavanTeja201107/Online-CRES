@@ -1,3 +1,15 @@
+/*
+ * API: policyApi
+ *
+ * Provides functions to fetch and accept policies from the backend, such as the Voting Policy.
+ * Uses axios for HTTP requests.
+ *  Exports:
+ *  - getPolicy, acceptPolicy
+ *
+ *  Usage:
+ *   import { getPolicy, acceptPolicy } from './policyApi';
+ */
+
 import axios from './axiosInstance';
 
 // Fetch a specific policy by name (default: Voting Policy)

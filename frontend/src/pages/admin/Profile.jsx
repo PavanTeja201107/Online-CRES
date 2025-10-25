@@ -1,3 +1,18 @@
+/**
+ * Page: AdminProfile
+ *
+ * Allows administrators to view and update their profile information, including name and email.
+ * Also provides password reset functionality via OTP.
+ *
+ * Features:
+ *   - Fetches and displays admin profile data
+ *   - Allows editing and saving profile fields
+ *   - Supports requesting and submitting OTP for password reset
+ *
+ * Usage:
+ *   Rendered as part of the admin dashboard routes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getAdminProfile, updateAdminProfile } from '../../api/adminApi';

@@ -1,3 +1,7 @@
+/* Global stylesheet for the frontend. Includes Tailwind CSS base, components, and utilities.
+ * Adds custom font and animation styles for UI consistency and effects. 
+ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

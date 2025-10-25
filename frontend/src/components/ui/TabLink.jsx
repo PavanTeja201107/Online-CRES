@@ -2,6 +2,18 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 export default function TabLink({ to, children }) {
+  /*
+   * TabLink
+   *
+   * Purpose:
+   * Small wrapper around NavLink that applies tab-like styling when active.
+   *
+   * Parameters:
+   * - to: destination path, children: link content.
+   *
+   * Return value:
+   * A NavLink with composed classes for active/inactive states.
+   */
   const cls = ({ isActive }) =>
     [
       'inline-flex items-center',

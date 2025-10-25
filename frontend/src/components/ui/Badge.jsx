@@ -10,6 +10,18 @@ const COLORS = {
 };
 
 export default function Badge({ color = 'gray', children, className = '' }) {
+  /*
+   * Badge
+   *
+   * Purpose:
+   * Small inline badge for short labels or status chips.
+   *
+   * Parameters:
+   * - color: visual color key, children: badge content, className: extra classes.
+   *
+   * Return value:
+   * A styled <span> element.
+   */
   return (
     <span
       className={`inline-block px-2 py-1 rounded text-white text-xs ${COLORS[color]} ${className}`}
