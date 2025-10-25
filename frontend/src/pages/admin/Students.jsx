@@ -138,7 +138,7 @@ export default function AdminStudents() {
           </Select>
           <div className="text-xs text-gray-600 md:col-span-2">
             Default password rule: <strong>ddmmyyyy</strong>. Student ID will be automatically
-            generated in the format <strong>classId_XXXX</strong>.
+            generated in the format <strong>CL[ClassId]S[0001]</strong> (e.g., class 1 → <strong>CL01S0001</strong>).
           </div>
           <button
             disabled={!form.name || !form.email || !form.date_of_birth || !form.class_id}

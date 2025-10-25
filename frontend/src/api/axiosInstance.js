@@ -14,8 +14,22 @@
 
 import axios from 'axios';
 
+/*
+ * Prefer configurable API base URL for deployments.
+ * Set VITE_API_BASE_URL in frontend/.env (e.g., https://your-backend.onrender.com/api)
+ */
+const API_BASE_URL =
+  import.meta?.env?.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:5500/api'
+    : undefined);
+
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5500/api',
+  /*
+   * If API_BASE_URL is undefined in production, requests will use relative URLs.
+   * Prefer setting VITE_API_BASE_URL to an absolute URL when frontend and backend are on different domains.
+   */
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
