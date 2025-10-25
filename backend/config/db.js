@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 
 /*
@@ -26,11 +27,29 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+async function bootstrapDefaultAdmin() {
+  try {
+    const [rows] = await pool.query('SELECT COUNT(*) AS count FROM Admin');
+    if (rows[0] && rows[0].count === 0) {
+      const hashedPassword = await bcrypt.hash('Admin@123', 10);
+      await pool.query(
+        'INSERT INTO Admin (admin_id, name, email, password_hash) VALUES (?, ?, ?, ?)',
+        ['default_admin', 'Default Admin', 'admin@example.com', hashedPassword]
+      );
+      console.log('Default admin created successfully');
+    }
+  } catch (err) {
+    console.warn('Skipping default admin bootstrap:', err.message);
+  }
+}
+
 (async () => {
   try {
     const conn = await pool.getConnection();
     console.log('MySQL connected successfully');
     conn.release();
+    // Attempt to ensure a default admin exists
+    await bootstrapDefaultAdmin();
   } catch (err) {
     console.error('MySQL connection error:', err.message);
   }

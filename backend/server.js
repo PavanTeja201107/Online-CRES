@@ -80,22 +80,3 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-// Adding Default Admin User if not exists
-(async () => {
-  try {
-    const [rows] = await pool.query('SELECT COUNT(*) as count FROM Admin');
-    if (rows[0].count === 0) {
-      const hashedPassword = await bcrypt.hash('Admin@123', 10);
-      await pool.query(
-        'INSERT INTO Admin (admin_id, name, email, password_hash) VALUES (?, ?, ?, ?)',
-        ['default_admin', 'Default Admin', 'admin@example.com', hashedPassword]
-      );
-      console.log('Default admin created successfully');
-    } else {
-      console.log('Admin already exists in the database');
-    }
-  } catch (err) {
-    console.error('Error ensuring default admin:', err.message);
-  }
-})();
