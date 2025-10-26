@@ -1,4 +1,4 @@
-# Online CRES (Class Representative Election System)
+# Online Class Representative Election System
 
 A full-stack web application for managing class representative elections, nominations, voting, and results with robust admin and student flows.
 
