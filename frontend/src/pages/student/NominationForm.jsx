@@ -17,7 +17,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyElections } from '../../api/electionApi';
 import { submitNomination, getMyNomination } from '../../api/nominationApi';
-import { getPolicy, acceptPolicy } from '../../api/policyApi';
+import { getPolicy, acceptPolicy, getPolicyStatus } from '../../api/policyApi';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 
@@ -32,15 +32,48 @@ export default function NominationForm() {
   const [policy, setPolicy] = useState(null);
   const [showPolicy, setShowPolicy] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [policyStatusByElection, setPolicyStatusByElection] = useState({});
+  const [nominationsByElection, setNominationsByElection] = useState({}); // Track nominations per election
 
   useEffect(() => {
     (async () => {
       try {
         const list = await getMyElections();
         setAllElections(list || []);
+        
+        // Fetch policy
         try {
           const p = await getPolicy('Nomination Policy');
           setPolicy(p);
+          
+          // Check policy acceptance status AND nominations for each election
+          if (list && list.length > 0) {
+            const statusMap = {};
+            const nominationsMap = {};
+            
+            for (const election of list) {
+              try {
+                // Check policy status
+                const status = await getPolicyStatus('Nomination Policy', election.election_id);
+                statusMap[election.election_id] = status.accepted || false;
+                
+                // Check if already nominated
+                try {
+                  const nomination = await getMyNomination(election.election_id);
+                  if (nomination && nomination.nomination_id) {
+                    nominationsMap[election.election_id] = nomination;
+                  }
+                } catch {
+                  // No nomination found
+                }
+              } catch {
+                statusMap[election.election_id] = false;
+              }
+            }
+            setPolicyStatusByElection(statusMap);
+            setNominationsByElection(nominationsMap);
+          }
         } catch {}
       } catch (error) {
         setErr(error.response?.data?.error || 'Failed to load elections');
@@ -78,16 +111,37 @@ export default function NominationForm() {
     }
   };
 
-  const handleNominateClick = (e) => {
-    // Check policy acceptance BEFORE showing nomination form
-    if (policy && !accepted) {
+  const handleNominateClick = async (e) => {
+    // Check if student has already nominated for this election
+    try {
+      const mine = await getMyNomination(e.election_id);
+      if (mine && mine.nomination_id) {
+        setErr('You have already submitted a nomination for this election. You can only nominate once per election.');
+        return;
+      }
+    } catch {
+      // No nomination found, continue
+    }
+    
+    // Check if policy is already accepted for this election
+    const isAccepted = policyStatusByElection[e.election_id];
+    
+    if (policy && !isAccepted) {
+      setElection(e); // Set election first so we have the ID for policy acceptance
       setShowPolicy(true);
       return;
     }
+    
+    // Policy already accepted, proceed to nomination
     setElection(e);
   };
   const submit = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
     setErr('');
     setMsg('');
     try {
@@ -102,13 +156,41 @@ export default function NominationForm() {
         photo_url: normalizedUrl,
       });
       setMsg(res?.message || 'Nomination submitted');
-      // mark as submitted locally so the form disables without needing a refetch
-      setMyNomination({ submitted: true });
-      // optional: clear form fields
+      
+      // Fetch the newly created nomination to get full details including status
+      try {
+        const newNomination = await getMyNomination(election.election_id);
+        if (newNomination && newNomination.nomination_id) {
+          // Update the nominations map to hide the nominate button
+          setNominationsByElection(prev => ({
+            ...prev,
+            [election.election_id]: newNomination
+          }));
+          setMyNomination(newNomination);
+        } else {
+          // Fallback if fetch fails
+          setMyNomination({ submitted: true, status: 'PENDING' });
+          setNominationsByElection(prev => ({
+            ...prev,
+            [election.election_id]: { submitted: true, status: 'PENDING' }
+          }));
+        }
+      } catch {
+        // Fallback if fetch fails
+        setMyNomination({ submitted: true, status: 'PENDING' });
+        setNominationsByElection(prev => ({
+          ...prev,
+          [election.election_id]: { submitted: true, status: 'PENDING' }
+        }));
+      }
+      
+      // Clear form fields
       setManifesto('');
       setPhotoUrl('');
     } catch (error) {
       setErr(error.response?.data?.error || error.message || 'Failed to submit');
+    } finally {
+      setIsSubmitting(false);
     }
   };
   return (
@@ -160,8 +242,8 @@ export default function NominationForm() {
                       className="border p-2 w-full mt-1 mb-3"
                     />
                   </label>
-                  <Button disabled={!manifesto} className="px-4">
-                    Submit Nomination
+                  <Button disabled={!manifesto || isSubmitting} className="px-4">
+                    {isSubmitting ? 'Submitting...' : 'Submit Nomination'}
                   </Button>
                 </form>
               </div>
@@ -263,6 +345,8 @@ export default function NominationForm() {
                     <Alert kind="danger" className="mb-3">
                       <strong>Nomination Rejected:</strong> Unfortunately, your nomination was not
                       approved. See the reason above. You may contact the admin for clarification.
+                      <br />
+                      <span className="text-xs mt-1 block">Note: You can only nominate once per election, even if rejected. This election is now closed for you.</span>
                     </Alert>
                   )}
 
@@ -304,23 +388,49 @@ export default function NominationForm() {
                 const ns = new Date(e.nomination_start).getTime();
                 const ne = new Date(e.nomination_end).getTime();
                 const open = now >= ns && now <= ne;
+                const hasNominated = nominationsByElection[e.election_id];
+                
                 return (
                   <li key={e.election_id} className="py-3 flex items-center justify-between">
-                    <div className="text-sm">
+                    <div className="text-sm flex-1">
                       <div className="font-medium">Election #{e.election_id}</div>
                       <div className="text-gray-600">
                         Nominations: {new Date(e.nomination_start).toLocaleString()} -{' '}
                         {new Date(e.nomination_end).toLocaleString()}
                       </div>
+                      {hasNominated && (
+                        <div className="mt-1">
+                          <span
+                            className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                              hasNominated.status === 'APPROVED'
+                                ? 'bg-green-100 text-green-800'
+                                : hasNominated.status === 'REJECTED'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
+                            {hasNominated.status || 'PENDING'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div>
-                      <Button
-                        variant={open ? 'primary' : 'secondary'}
-                        disabled={!open}
-                        onClick={() => handleNominateClick(e)}
-                      >
-                        {open ? 'Nominate' : 'Closed'}
-                      </Button>
+                      {hasNominated ? (
+                        <Button
+                          variant="secondary"
+                          onClick={() => setElection(e)}
+                        >
+                          View Details
+                        </Button>
+                      ) : (
+                        <Button
+                          variant={open ? 'primary' : 'secondary'}
+                          disabled={!open}
+                          onClick={() => handleNominateClick(e)}
+                        >
+                          {open ? 'Nominate' : 'Closed'}
+                        </Button>
+                      )}
                     </div>
                   </li>
                 );
@@ -390,12 +500,18 @@ export default function NominationForm() {
                 <Button
                   onClick={async () => {
                     try {
-                      await acceptPolicy('Nomination Policy');
-                      setAccepted(true);
+                      // Pass election_id when accepting nomination policy
+                      await acceptPolicy('Nomination Policy', election?.election_id);
+                      // Update the policy status map
+                      setPolicyStatusByElection(prev => ({
+                        ...prev,
+                        [election?.election_id]: true
+                      }));
                       setShowPolicy(false);
-                      setMsg('Policy accepted. Please click "Nominate" again to proceed.');
+                      setMsg('Policy accepted. You can now submit your nomination.');
                     } catch (e) {
                       setErr(e.response?.data?.error || 'Failed to accept');
+                      setShowPolicy(false);
                     }
                   }}
                 >

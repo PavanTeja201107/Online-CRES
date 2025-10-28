@@ -16,13 +16,11 @@ import axios from 'axios';
 
 /*
  * Prefer configurable API base URL for deployments.
- * Set VITE_API_BASE_URL in frontend/.env (e.g., https://your-backend.onrender.com/api)
+ * - In development, when VITE_API_BASE_URL is not set, default to '/api' so Vite's dev proxy can forward
+ *   to the backend automatically (no CORS, works over LAN and on mobile).
+ * - In production or when front/back are on different hosts, set VITE_API_BASE_URL to the absolute backend URL.
  */
-const API_BASE_URL =
-  import.meta?.env?.VITE_API_BASE_URL ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:5500/api'
-    : undefined);
+const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || '/api';
 
 const axiosInstance = axios.create({
   /*

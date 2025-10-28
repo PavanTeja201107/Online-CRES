@@ -27,6 +27,7 @@ export default function AdminStudents() {
   const [err, setErr] = useState('');
   const [classes, setClasses] = useState([]);
   const [msg, setMsg] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const load = async () => {
     try {
@@ -55,12 +56,18 @@ export default function AdminStudents() {
 
   const submit = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isCreating) return;
+    
+    setIsCreating(true);
     setErr('');
     setMsg('');
     try {
       const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
       if (!gmailRegex.test(String(form.email))) {
         setErr('Only Gmail addresses are supported (example@gmail.com)');
+        setIsCreating(false);
         return;
       }
       // Build payload; backend will auto-generate student_id as classIdXXXX
@@ -73,9 +80,11 @@ export default function AdminStudents() {
       const res = await createStudent(payload);
       setMsg(`Student created. ID: ${res?.student_id} | Default password: ${res?.defaultPassword}`);
       setForm({ name: '', email: '', date_of_birth: '', class_id: '' });
-      load();
+      await load();
     } catch (e) {
       setErr(e.response?.data?.error || 'Failed to create');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -141,10 +150,10 @@ export default function AdminStudents() {
             generated in the format <strong>CL[ClassId]S[0001]</strong> (e.g., class 1 → <strong>CL01S0001</strong>).
           </div>
           <button
-            disabled={!form.name || !form.email || !form.date_of_birth || !form.class_id}
-            className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60"
+            disabled={!form.name || !form.email || !form.date_of_birth || !form.class_id || isCreating}
+            className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Create
+            {isCreating ? 'Creating...' : 'Create'}
           </button>
         </form>
 

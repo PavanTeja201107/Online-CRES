@@ -32,6 +32,8 @@ export default function AdminProfile() {
   const [otp, setOtp] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const load = async () => {
     try {
@@ -49,14 +51,21 @@ export default function AdminProfile() {
 
   const save = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isSaving) return;
+    
+    setIsSaving(true);
     setErr('');
     setMsg('');
     try {
       await updateAdminProfile({ name, email });
       setMsg('Profile updated');
-      load();
+      await load();
     } catch (e) {
       setErr(e.response?.data?.error || 'Failed to update');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -75,6 +84,10 @@ export default function AdminProfile() {
 
   const submitReset = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isResetting) return;
+    
     setErr('');
     setMsg('');
     if (!otp || !newPw || !confirmPw) {
@@ -89,6 +102,8 @@ export default function AdminProfile() {
       setErr('Passwords do not match');
       return;
     }
+    
+    setIsResetting(true);
     try {
       const r = await resetPasswordApi(profile.admin_id, otp, newPw);
       setMsg(r?.message || 'Password reset successful');
@@ -98,6 +113,8 @@ export default function AdminProfile() {
       setOtpRequested(false);
     } catch (e) {
       setErr(e.response?.data?.error || 'Failed to reset password');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -128,7 +145,12 @@ export default function AdminProfile() {
                   className="border p-2 w-full mt-1"
                 />
               </label>
-              <button className="bg-indigo-600 text-white px-4 py-2 rounded">Save</button>
+              <button 
+                className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
             </form>
 
             <div className="bg-white p-4 rounded shadow">
@@ -181,8 +203,11 @@ export default function AdminProfile() {
                     </label>
                   </div>
                   <div className="sm:col-span-2">
-                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                      Set New Password
+                    <button 
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={isResetting}
+                    >
+                      {isResetting ? 'Setting Password...' : 'Set New Password'}
                     </button>
                   </div>
                 </form>

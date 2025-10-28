@@ -19,6 +19,7 @@ export default function StudentProfile() {
   const [confirmPw, setConfirmPw] = useState('');
   const [msg, setMsg] = useState('');
   const [errMsg, setErrMsg] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -61,6 +62,10 @@ export default function StudentProfile() {
 
   const submitReset = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isResetting) return;
+    
     setErrMsg('');
     setMsg('');
 
@@ -74,6 +79,8 @@ export default function StudentProfile() {
       setErrMsg('Passwords do not match');
       return;
     }
+    
+    setIsResetting(true);
     try {
       const r = await resetPassword(profile.student_id, otp, newPw);
       setMsg(r?.message || 'Password reset successful');
@@ -83,6 +90,8 @@ export default function StudentProfile() {
       setOtpRequested(false);
     } catch (e) {
       setErrMsg(e.response?.data?.error || 'Failed to reset password');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -162,8 +171,11 @@ export default function StudentProfile() {
                     </label>
                   </div>
                   <div className="sm:col-span-2">
-                    <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                      Set New Password
+                    <button 
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={isResetting}
+                    >
+                      {isResetting ? 'Setting Password...' : 'Set New Password'}
                     </button>
                   </div>
                 </form>

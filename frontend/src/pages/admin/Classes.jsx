@@ -25,6 +25,7 @@ export default function AdminClasses() {
   const [name, setName] = useState('');
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const load = async () => {
     try {
@@ -42,15 +43,22 @@ export default function AdminClasses() {
 
   const submit = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isCreating) return;
+    
+    setIsCreating(true);
     setErr('');
     setMsg('');
     try {
       await createClass(name);
       setMsg('Class created');
       setName('');
-      load();
+      await load();
     } catch (e) {
       setErr(e.response?.data?.error || 'Failed to create');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -84,19 +92,22 @@ export default function AdminClasses() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
 
-  const requestDelete = (clazz) => {
+  const requestDelete = async (clazz) => {
     const count = (studentsByClass.get(clazz.class_id) || []).length;
     if (count > 0) {
       setPendingDelete({ ...clazz, count });
       setConfirmOpen(true);
     } else {
       // direct delete
-      deleteClass(clazz.class_id)
-        .then(() => {
-          if (selectedClassId === clazz.class_id) setSelectedClassId(null);
-          load();
-        })
-        .catch((e) => setErr(e.response?.data?.error || 'Failed to delete class'));
+      try {
+        await deleteClass(clazz.class_id);
+        if (selectedClassId === clazz.class_id) setSelectedClassId(null);
+        setMsg(`Class ${clazz.class_name} deleted successfully`);
+        setErr('');
+        await load();
+      } catch (e) {
+        setErr(e.response?.data?.error || 'Failed to delete class');
+      }
     }
   };
 
@@ -123,10 +134,10 @@ export default function AdminClasses() {
                 />
               </label>
               <button
-                disabled={!name}
-                className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60"
+                disabled={!name || isCreating}
+                className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Add
+                {isCreating ? 'Adding...' : 'Add'}
               </button>
             </form>
 
@@ -144,11 +155,10 @@ export default function AdminClasses() {
                   const count = (studentsByClass.get(c.class_id) || []).length;
                   const active = selectedClassId === c.class_id;
                   return (
-                    <button
-                      type="button"
+                    <div
                       key={c.class_id}
+                      className={`w-full text-left p-3 flex items-center justify-between ${active ? 'bg-indigo-50' : 'hover:bg-gray-50'} cursor-pointer`}
                       onClick={() => setSelectedClassId(c.class_id)}
-                      className={`w-full text-left p-3 flex items-center justify-between ${active ? 'bg-indigo-50' : ''}`}
                     >
                       <div>
                         <div className="font-medium">
@@ -168,7 +178,7 @@ export default function AdminClasses() {
                           Delete
                         </button>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
                 {!filteredClasses.length && <div className="p-4 text-gray-600">No classes</div>}
@@ -229,7 +239,7 @@ export default function AdminClasses() {
         </div>
       </div>
       <Modal
-        open={confirmOpen}
+        isOpen={confirmOpen}
         onClose={() => {
           setConfirmOpen(false);
           setPendingDelete(null);
@@ -259,9 +269,11 @@ export default function AdminClasses() {
                 setErr('');
                 setConfirmOpen(false);
                 setPendingDelete(null);
-                load();
+                await load(); // Wait for reload to complete
               } catch (e) {
                 setErr(e.response?.data?.error || 'Failed to delete class');
+                setConfirmOpen(false);
+                setPendingDelete(null);
               }
             }}
             className="px-4 py-2 rounded bg-red-600 text-white"

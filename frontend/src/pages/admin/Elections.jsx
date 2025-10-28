@@ -39,6 +39,7 @@ export default function AdminElections() {
   const { push } = useToast();
   const [err, setErr] = useState('');
   const [classes, setClasses] = useState([]);
+  const [isCreating, setIsCreating] = useState(false);
 
   const load = async () => {
     try {
@@ -60,6 +61,11 @@ export default function AdminElections() {
 
   const submit = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isCreating) return;
+    
+    setIsCreating(true);
     setErr('');
     setMsg('');
     // client-side strict validation: ns < ne < vs < ve
@@ -72,6 +78,7 @@ export default function AdminElections() {
         setErr(
           'Invalid timeline: ensure nomination_start < nomination_end < voting_start < voting_end',
         );
+        setIsCreating(false);
         return;
       }
       await createElection(form);
@@ -83,9 +90,11 @@ export default function AdminElections() {
         voting_start: '',
         voting_end: '',
       });
-      load();
+      await load();
     } catch (e) {
       setErr(e.response?.data?.error || 'Failed to create');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -150,10 +159,11 @@ export default function AdminElections() {
               !form.nomination_start ||
               !form.nomination_end ||
               !form.voting_start ||
-              !form.voting_end
+              !form.voting_end ||
+              isCreating
             }
           >
-            Create
+            {isCreating ? 'Creating...' : 'Create'}
           </Button>
         </form>
 

@@ -21,6 +21,7 @@ export default function AdminPolicy() {
   const [editText, setEditText] = useState({});
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const [updatingId, setUpdatingId] = useState(null);
 
   // Only show the two allowed policies
   const load = async () => {
@@ -42,6 +43,10 @@ export default function AdminPolicy() {
 
   // Update policy text/version only
   const update = async (policy) => {
+    // Prevent multiple submissions
+    if (updatingId === policy.policy_id) return;
+    
+    setUpdatingId(policy.policy_id);
     setErr('');
     setMsg('');
     try {
@@ -50,9 +55,11 @@ export default function AdminPolicy() {
         policy_text: editText[policy.policy_id],
       });
       setMsg('Policy updated');
-      load();
+      await load();
     } catch (e) {
       setErr(e.response?.data?.error || 'Failed to update');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -87,10 +94,11 @@ export default function AdminPolicy() {
                   </td>
                   <td className="p-2">
                     <button
-                      className="bg-indigo-600 text-white px-4 py-2 rounded"
+                      className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
                       onClick={() => update(p)}
+                      disabled={updatingId === p.policy_id}
                     >
-                      Update
+                      {updatingId === p.policy_id ? 'Updating...' : 'Update'}
                     </button>
                   </td>
                 </tr>

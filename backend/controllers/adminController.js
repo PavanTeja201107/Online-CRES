@@ -126,15 +126,27 @@ exports.createClass = async (req, res) => {
  * Returns: JSON message confirming deletion.
  */
 exports.deleteClass = async (req, res) => {
+  let conn;
   try {
     const id = req.params.id;
     const force =
       String(req.query.force || '').toLowerCase() === 'true' ||
       req.query.force === '1';
 
-    const conn = await pool.getConnection();
+    conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
+
+      // Check if class exists first
+      const [classRows] = await conn.query(
+        'SELECT class_id, class_name FROM Class WHERE class_id = ?',
+        [id]
+      );
+      
+      if (classRows.length === 0) {
+        await conn.rollback();
+        return res.status(404).json({ error: 'Class not found' });
+      }
 
       const [studentsRows] = await conn.query(
         'SELECT student_id, email, name FROM Student WHERE class_id = ?',
@@ -144,7 +156,6 @@ exports.deleteClass = async (req, res) => {
 
       if (studentsCount > 0 && !force) {
         await conn.rollback();
-        conn.release();
         return res.status(400).json({
           error:
             'Class has enrolled students. Re-run with force=true to delete class, its students, and all related elections, nominations and votes. Notifications will be sent to enrolled students.',
@@ -175,9 +186,9 @@ exports.deleteClass = async (req, res) => {
         'DELETE FROM Class WHERE class_id = ?',
         [id]
       );
+      
       if (delRes.affectedRows === 0) {
         await conn.rollback();
-        conn.release();
         return res.status(404).json({ error: 'Class not found' });
       }
 
@@ -187,84 +198,90 @@ exports.deleteClass = async (req, res) => {
         students_removed: studentsCount,
       });
       await conn.commit();
-      conn.release();
 
-      // Notify affected students by email (best-effort, outside transaction)
-      try {
-        if (studentsRows.length) {
-          const host = process.env.SMTP_HOST;
-          const port = parseInt(process.env.SMTP_PORT || '587');
-          const user = process.env.SMTP_USER;
-          const pass = process.env.SMTP_PASS;
-          if (host && user && pass) {
-            const transporter = nodemailer.createTransport({
-              host,
-              port,
-              secure: false,
-              auth: { user, pass },
-            });
-            for (const s of studentsRows) {
-              if (!s.email) continue;
-              const text = `
-                <div style="${Object.entries(emailStyles.container).map(([key, value]) => `${key}: ${value}`).join('; ')}">
-                  <p>Dear <strong>${s.name || s.student_id}</strong>,</p>
-                  
-                  <p>We are writing to inform you that your class (Class ID: <strong style="color: #dc2626;">${id}</strong>) has been removed from the <strong>College CR Election System</strong> by an administrator.</p>
-                  
-                  <p>As a result of this action, the following data associated with your class has been permanently deleted:</p>
-                  
-                  <div style="${Object.entries(emailStyles.impactBox).map(([key, value]) => `${key}: ${value}`).join('; ')}">
-                    <p style="margin: 0 0 10px 0;"><strong>⚠️ Impact on Your Account and Data:</strong></p>
-                    <ul style="margin: 0; padding-left: 20px;">
-                      <li style="margin: 5px 0;"><strong>Student accounts</strong> for this class have been deleted</li>
-                      <li style="margin: 5px 0;"><strong>All elections</strong> associated with this class have been removed</li>
-                      <li style="margin: 5px 0;"><strong>Nomination records</strong> for this class have been deleted</li>
-                      <li style="margin: 5px 0;"><strong>Voting records</strong> for this class have been deleted</li>
-                      <li style="margin: 5px 0;"><strong>Class information</strong> and related data have been removed from the system</li>
-                    </ul>
-                  </div>
-                  
-                  <p>If you believe this action was taken in error or if you have any questions, please contact the system administrator immediately at <a href="mailto:[Admin Contact Email]" style="color: #2563eb;">[Admin Contact Email]</a>.</p>
-                  
-                  <hr style="${Object.entries(emailStyles.hr).map(([key, value]) => `${key}: ${value}`).join('; ')}">
-                  
-                  <p style="margin: 5px 0;">Best regards,<br>
-                  <strong>The Election Committee</strong><br>
-                  College CR Election System</p>
-                </div>
-              `;
-              await transporter.sendMail({
-                from: process.env.OTP_EMAIL_FROM,
-                to: s.email,
-                subject:
-                  'Important Notice: Your Class Has Been Removed from the College CR Election System',
-                html: text,
-              });
-            }
-          }
-        }
-      } catch (mailErr) {
-        console.error(
-          'deleteClass notification email error:',
-          mailErr && mailErr.message ? mailErr.message : mailErr
-        );
-      }
-
+      // Send response first
       res.json({
         message: 'Class deleted successfully',
         studentsRemoved: studentsCount,
         force,
       });
-    } catch (err) {
+      
+      // Notify affected students by email (best-effort, after response)
+      // This runs asynchronously after the response is sent
+      if (studentsRows.length) {
+        setImmediate(async () => {
+          try {
+            const host = process.env.SMTP_HOST;
+            const port = parseInt(process.env.SMTP_PORT || '587');
+            const user = process.env.SMTP_USER;
+            const pass = process.env.SMTP_PASS;
+            if (host && user && pass) {
+              const transporter = nodemailer.createTransport({
+                host,
+                port,
+                secure: false,
+                auth: { user, pass },
+              });
+              for (const s of studentsRows) {
+                if (!s.email) continue;
+                const text = `
+                  <div style="${Object.entries(emailStyles.container).map(([key, value]) => `${key}: ${value}`).join('; ')}">
+                    <p>Dear <strong>${s.name || s.student_id}</strong>,</p>
+                    
+                    <p>We are writing to inform you that your class (Class ID: <strong style="color: #dc2626;">${id}</strong>) has been removed from the <strong>College CR Election System</strong> by an administrator.</p>
+                    
+                    <p>As a result of this action, the following data associated with your class has been permanently deleted:</p>
+                    
+                    <div style="${Object.entries(emailStyles.impactBox).map(([key, value]) => `${key}: ${value}`).join('; ')}">
+                      <p style="margin: 0 0 10px 0;"><strong>⚠️ Impact on Your Account and Data:</strong></p>
+                      <ul style="margin: 0; padding-left: 20px;">
+                        <li style="margin: 5px 0;"><strong>Student accounts</strong> for this class have been deleted</li>
+                        <li style="margin: 5px 0;"><strong>All elections</strong> associated with this class have been removed</li>
+                        <li style="margin: 5px 0;"><strong>Nomination records</strong> for this class have been deleted</li>
+                        <li style="margin: 5px 0;"><strong>Voting records</strong> for this class have been deleted</li>
+                        <li style="margin: 5px 0;"><strong>Class information</strong> and related data have been removed from the system</li>
+                      </ul>
+                    </div>
+                    
+                    <p>If you believe this action was taken in error or if you have any questions, please contact the system administrator immediately at <a href="mailto:[Admin Contact Email]" style="color: #2563eb;">[Admin Contact Email]</a>.</p>
+                    
+                    <hr style="${Object.entries(emailStyles.hr).map(([key, value]) => `${key}: ${value}`).join('; ')}">
+                    
+                    <p style="margin: 5px 0;">Best regards,<br>
+                    <strong>The Election Committee</strong><br>
+                    College CR Election System</p>
+                  </div>
+                `;
+                await transporter.sendMail({
+                  from: process.env.OTP_EMAIL_FROM,
+                  to: s.email,
+                  subject:
+                    'Important Notice: Your Class Has Been Removed from the College CR Election System',
+                  html: text,
+                });
+              }
+            }
+          } catch (mailErr) {
+            console.error(
+              'deleteClass notification email error:',
+              mailErr && mailErr.message ? mailErr.message : mailErr
+            );
+          }
+        });
+      }
+    } catch (txErr) {
       try {
         await conn.rollback();
       } catch (_) {}
-      conn.release();
-      throw err;
+      throw txErr;
+    } finally {
+      if (conn) conn.release();
     }
   } catch (err) {
     console.error('deleteClass error:', err);
-    res.status(500).json({ error: 'Server error' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Server error: ' + (err.message || 'Unknown error') });
+    }
   }
 };
 
