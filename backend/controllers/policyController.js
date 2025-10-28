@@ -33,7 +33,7 @@ exports.listPolicies = async (req, res) => {
 
 exports.acceptPolicy = async (req, res) => {
   try {
-    let { policy_id, name } = req.body || {};
+    let { policy_id, name, election_id } = req.body || {};
     if (!policy_id && name) {
       // resolve policy_id by name
       const [rows] = await pool.query(
@@ -46,16 +46,63 @@ exports.acceptPolicy = async (req, res) => {
     }
     if (!policy_id)
       return res.status(400).json({ error: 'policy_id or name required' });
-    await pool.query(
-      'INSERT INTO PolicyAcceptance (user_id, policy_id, timestamp) VALUES (?, ?, NOW())',
-      [req.user.id, policy_id]
+
+    // Enforce per-election acceptance only (no global acceptance)
+    if (!election_id) {
+      return res.status(400).json({ error: 'election_id is required for policy acceptance' });
+    }
+    const [exists] = await pool.query(
+      'SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? AND election_id = ? LIMIT 1',
+      [req.user.id, policy_id, election_id]
     );
+    if (exists.length) {
+      return res.json({ message: 'Policy already accepted for this election', election_id });
+    }
+    await pool.query(
+      'INSERT INTO PolicyAcceptance (user_id, policy_id, election_id, timestamp) VALUES (?, ?, ?, NOW())',
+      [req.user.id, policy_id, election_id]
+    );
+
     await logAction(req.user.id, req.user.role, req.ip, 'POLICY_ACCEPT', {
       policy_id,
+      election_id: election_id || null,
     });
-    res.json({ message: 'Policy accepted successfully' });
+    res.json({ message: 'Policy accepted successfully', election_id });
   } catch (err) {
     console.error('acceptPolicy error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Check acceptance status for a policy (optionally scoped to an election)
+// GET /policy/status?name=Voting%20Policy&election_id=123
+exports.getPolicyStatus = async (req, res) => {
+  try {
+    let { policy_id, name, election_id } = req.query || {};
+    if (!policy_id && name) {
+      const [rows] = await pool.query(
+        'SELECT policy_id FROM Policy WHERE name = ? LIMIT 1',
+        [name]
+      );
+      if (!rows.length)
+        return res.status(404).json({ error: 'Policy not found' });
+      policy_id = rows[0].policy_id;
+    }
+    if (!policy_id)
+      return res.status(400).json({ error: 'policy_id or name required' });
+
+    // Only election-specific acceptance is valid
+    if (!election_id) {
+      return res.json({ accepted: false });
+    }
+    const [byElection] = await pool.query(
+      'SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? AND election_id = ? LIMIT 1',
+      [req.user.id, policy_id, election_id]
+    );
+    if (byElection.length) return res.json({ accepted: true, scope: 'election' });
+    return res.json({ accepted: false });
+  } catch (err) {
+    console.error('getPolicyStatus error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 };

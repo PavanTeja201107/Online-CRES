@@ -15,7 +15,7 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyActiveElection } from '../../api/electionApi';
-import { getPolicy, acceptPolicy } from '../../api/policyApi';
+import { getPolicy, acceptPolicy, getPolicyStatus } from '../../api/policyApi';
 import { submitNomination } from '../../api/nominationApi';
 
 export default function StudentNominations() {
@@ -34,9 +34,11 @@ export default function StudentNominations() {
         const e = await getMyActiveElection();
         setElection(e);
         // Always use global Nomination Policy by name
-        const p = await getPolicy('Nomination Policy');
-        setPolicy(p);
-        setAccepted(!!p?.accepted);
+  const p = await getPolicy('Nomination Policy');
+  setPolicy(p);
+  // Check if already accepted for this election (or globally)
+  const status = await getPolicyStatus('Nomination Policy', e.election_id);
+  setAccepted(!!status?.accepted);
       } catch (err) {
         setError('No active election or failed to load.');
       }
@@ -47,7 +49,7 @@ export default function StudentNominations() {
 
   const handleAcceptPolicy = async () => {
     try {
-      await acceptPolicy('Nomination Policy');
+      await acceptPolicy('Nomination Policy', election.election_id);
       setAccepted(true);
     } catch (err) {
       setError('Failed to accept policy.');

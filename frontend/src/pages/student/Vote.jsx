@@ -17,7 +17,7 @@ import Navbar from '../../components/Navbar';
 import { getMyActiveElection } from '../../api/electionApi';
 import { listApprovedByElection } from '../../api/nominationApi';
 import { getVoteToken, castVote } from '../../api/voteApi';
-import { getPolicy, acceptPolicy } from '../../api/policyApi';
+import { getPolicy, acceptPolicy, getPolicyStatus } from '../../api/policyApi';
 
 export default function VotePage() {
   const [election, setElection] = useState(null);
@@ -58,6 +58,9 @@ export default function VotePage() {
         try {
           const p = await getPolicy('Voting Policy');
           setPolicy(p);
+          // Pre-check acceptance for this election (or global)
+          const status = await getPolicyStatus('Voting Policy', e.election_id);
+          setAccepted(!!status?.accepted);
         } catch {}
       } catch (error) {
         setErr(error.response?.data?.error || 'No active election');
@@ -71,18 +74,21 @@ export default function VotePage() {
     try {
       if (!election) return;
 
-      // Check policy acceptance BEFORE getting token
-      if (policy && !accepted) {
-        setShowPolicy(true);
-        return;
-      }
-
+      // First, check if the student has already voted by attempting token issuance.
+      // This endpoint returns { status: 'already_voted' } without requiring policy acceptance.
       const res = await getVoteToken(election.election_id);
 
       // Check if response indicates already voted
       if (res.status === 'already_voted') {
         setAlreadyVoted(true);
         setErr('You have already cast your vote for this election.');
+        return;
+      }
+
+      // If not already voted and policy not accepted yet, prompt for policy before using token.
+      if (policy && !accepted) {
+        setShowPolicy(true);
+        // Don't reveal or store the token until policy is accepted
         return;
       }
 
@@ -300,7 +306,7 @@ export default function VotePage() {
                 <button
                   onClick={async () => {
                     try {
-                      await acceptPolicy('Voting Policy');
+                      await acceptPolicy('Voting Policy', election.election_id);
                       setAccepted(true);
                       setShowPolicy(false);
                       setMsg('Policy accepted. Please click "Get Token" again to proceed.');

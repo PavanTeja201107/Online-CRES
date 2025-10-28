@@ -85,15 +85,15 @@ exports.submitNomination = async (req, res) => {
           error: 'You have already submitted a nomination for this election',
         });
 
-    // ensure global nomination policy accepted
+    // ensure nomination policy accepted (per-election or globally)
     const [policyRows] = await pool.query(
       "SELECT policy_id FROM Policy WHERE name = 'Nomination Policy' LIMIT 1"
     );
     if (policyRows.length) {
       const policyId = policyRows[0].policy_id;
       const [accepted] = await pool.query(
-        'SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ?',
-        [studentId, policyId]
+        'SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? AND election_id = ? LIMIT 1',
+        [studentId, policyId, election_id]
       );
       if (!accepted.length)
         return res

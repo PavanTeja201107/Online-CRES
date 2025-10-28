@@ -22,5 +22,15 @@ export const getPolicy = async (name = 'Voting Policy') => {
   }
   return {};
 };
-export const acceptPolicy = (name = 'Voting Policy') =>
-  axios.post('/policy/accept', { name }).then((r) => r.data);
+
+// Get acceptance status, optionally scoped to an election
+export const getPolicyStatus = async (name = 'Voting Policy', electionId) => {
+  const params = { name };
+  if (electionId != null) params.election_id = electionId;
+  const res = await axios.get('/policy/status', { params });
+  return res.data; // { accepted: boolean, scope?: 'election'|'global' }
+};
+
+// Accept policy (optionally for a specific election)
+export const acceptPolicy = (name = 'Voting Policy', electionId) =>
+  axios.post('/policy/accept', { name, election_id: electionId }).then((r) => r.data);

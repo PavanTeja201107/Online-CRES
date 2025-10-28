@@ -13,6 +13,8 @@ const ctrl = require('../controllers/policyController');
  */
 // Get both policies
 router.get('/', verifyToken, ctrl.getPolicies);
+// Check acceptance status (optionally per election)
+router.get('/status', verifyToken, ctrl.getPolicyStatus);
 // Accept a policy (requires policy_id)
 router.post('/accept', verifyToken, ctrl.acceptPolicy);
 // List policies (admin)

@@ -1,4 +1,3 @@
--- 1. core tables
 CREATE TABLE Admin (
   admin_id VARCHAR(20) NOT NULL,
   name VARCHAR(100) NOT NULL,
@@ -7,13 +6,13 @@ CREATE TABLE Admin (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   last_login_at DATETIME NULL,
   PRIMARY KEY (admin_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+)
 
 CREATE TABLE Class (
   class_id INT NOT NULL AUTO_INCREMENT,
   class_name VARCHAR(100) NOT NULL,
   PRIMARY KEY (class_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+)
 
 CREATE TABLE Student (
   student_id VARCHAR(20) NOT NULL,
@@ -28,7 +27,7 @@ CREATE TABLE Student (
   PRIMARY KEY (student_id),
   KEY fk_student_class (class_id),
   CONSTRAINT fk_student_class FOREIGN KEY (class_id) REFERENCES Class(class_id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) 
 
 CREATE TABLE Election (
   election_id INT NOT NULL AUTO_INCREMENT,
@@ -46,7 +45,7 @@ CREATE TABLE Election (
   KEY fk_election_admin (created_by_admin_id),
   CONSTRAINT fk_election_admin FOREIGN KEY (created_by_admin_id) REFERENCES Admin(admin_id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_election_class FOREIGN KEY (class_id) REFERENCES Class(class_id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+)
 
 CREATE TABLE Nomination (
   nomination_id INT NOT NULL AUTO_INCREMENT,
@@ -66,7 +65,7 @@ CREATE TABLE Nomination (
   CONSTRAINT fk_nomination_admin FOREIGN KEY (reviewed_by_admin_id) REFERENCES Admin(admin_id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_nomination_election FOREIGN KEY (election_id) REFERENCES Election(election_id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_nomination_student FOREIGN KEY (student_id) REFERENCES Student(student_id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+)
 
 CREATE TABLE OTP (
   otp_id INT NOT NULL AUTO_INCREMENT,
@@ -80,7 +79,7 @@ CREATE TABLE OTP (
   PRIMARY KEY (otp_id),
   KEY ix_otp_user (user_id, user_role),
   KEY ix_otp_purpose (purpose)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) 
 
 CREATE TABLE Policy (
   policy_id INT NOT NULL AUTO_INCREMENT,
@@ -92,18 +91,22 @@ CREATE TABLE Policy (
   PRIMARY KEY (policy_id),
   KEY fk_policy_admin (created_by_admin_id),
   CONSTRAINT fk_policy_admin FOREIGN KEY (created_by_admin_id) REFERENCES Admin(admin_id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) 
 
 CREATE TABLE PolicyAcceptance (
   acceptance_id INT NOT NULL AUTO_INCREMENT,
   user_id VARCHAR(20) NOT NULL,
   policy_id INT NOT NULL,
+  election_id INT DEFAULT NULL,
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
   user_role ENUM('ADMIN','STUDENT') DEFAULT 'STUDENT',
   PRIMARY KEY (acceptance_id),
   KEY fk_policyacceptance_policy (policy_id),
-  CONSTRAINT fk_policyacceptance_policy FOREIGN KEY (policy_id) REFERENCES Policy(policy_id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY fk_policyacceptance_election (election_id),
+  UNIQUE KEY uq_policy_acceptance_per_scope (user_id, policy_id, election_id),
+  CONSTRAINT fk_policyacceptance_policy FOREIGN KEY (policy_id) REFERENCES Policy(policy_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_policyacceptance_election FOREIGN KEY (election_id) REFERENCES Election(election_id) ON DELETE CASCADE ON UPDATE CASCADE
+) 
 
 CREATE TABLE Session (
   session_id VARCHAR(64) NOT NULL,
@@ -112,7 +115,7 @@ CREATE TABLE Session (
   creation_time DATETIME DEFAULT CURRENT_TIMESTAMP,
   expiry_time DATETIME NOT NULL,
   PRIMARY KEY (session_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+)
 
 CREATE TABLE AuditLog (
   log_id INT NOT NULL AUTO_INCREMENT,
@@ -124,7 +127,7 @@ CREATE TABLE AuditLog (
   details JSON DEFAULT NULL,
   outcome ENUM('SUCCESS','FAILURE') DEFAULT 'SUCCESS',
   PRIMARY KEY (log_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+)
 
 CREATE TABLE VotingToken (
   token_id VARCHAR(64) NOT NULL,
@@ -140,8 +143,7 @@ CREATE TABLE VotingToken (
   KEY fk_votingtoken_student (student_id),
   CONSTRAINT fk_votingtoken_election FOREIGN KEY (election_id) REFERENCES Election(election_id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_votingtoken_student FOREIGN KEY (student_id) REFERENCES Student(student_id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
+)
 
 -- Insert default policies
 INSERT INTO Policy (policy_id, name, policy_text, version, created_at) VALUES
@@ -174,7 +176,7 @@ CREATE TABLE VoterStatus (
   KEY fk_voterstatus_election (election_id),
   CONSTRAINT fk_voterstatus_election FOREIGN KEY (election_id) REFERENCES Election(election_id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_voterstatus_student FOREIGN KEY (student_id) REFERENCES Student(student_id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+)
 
 CREATE TABLE VoteAnonymous (
   vote_id INT NOT NULL AUTO_INCREMENT,
@@ -185,33 +187,4 @@ CREATE TABLE VoteAnonymous (
   PRIMARY KEY (vote_id),
   KEY ix_vote_election (election_id),
   CONSTRAINT fk_voteanonymous_election FOREIGN KEY (election_id) REFERENCES Election(election_id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-
--- Migration: Add last_login_at column to Admin table for last login tracking
--- Date: 2025-10-21
-
--- ALTER TABLE Admin 
--- ADD COLUMN last_login_at DATETIME DEFAULT NULL 
--- AFTER password_hash;
-
--- Note: Student table uses 'last_login_at' for consistency with Admin.last_login_at
--- If your live database still has 'last_login', follow the migration steps below to add/copy/drop safely.
--- Example (use with care):
--- ALTER TABLE Student CHANGE COLUMN last_login last_login_at DATETIME DEFAULT NULL;
-
--- -- Add rejection_reason to Nomination table (if not exists)
--- ALTER TABLE Nomination 
--- ADD COLUMN IF NOT EXISTS rejection_reason TEXT NULL;
-
--- -- Add is_published to Election table (if not exists)
--- ALTER TABLE Election 
--- ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE;
-
--- -- Add last_login_at to Student table (if not exists)
--- ALTER TABLE Student 
--- ADD COLUMN IF NOT EXISTS last_login_at DATETIME NULL;
-
--- -- Add last_login_at to Admin table (if not exists)
--- ALTER TABLE Admin 
--- ADD COLUMN IF NOT EXISTS last_login_at DATETIME NULL;
+)

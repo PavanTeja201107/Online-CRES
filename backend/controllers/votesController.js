@@ -112,15 +112,15 @@ exports.castVote = async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    // ensure global voting policy accepted
+    // ensure voting policy accepted (per-election only)
     const [policyRows] = await conn.query(
       "SELECT policy_id FROM Policy WHERE name = 'Voting Policy' LIMIT 1"
     );
     if (policyRows.length) {
       const policyId = policyRows[0].policy_id;
       const [pa] = await conn.query(
-        'SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? LIMIT 1',
-        [userId, policyId]
+        'SELECT 1 FROM PolicyAcceptance WHERE user_id = ? AND policy_id = ? AND election_id = ? LIMIT 1',
+        [userId, policyId, election_id]
       );
       if (!pa.length) {
         await conn.rollback();
