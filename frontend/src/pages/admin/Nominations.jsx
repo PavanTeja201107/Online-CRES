@@ -180,7 +180,7 @@ export default function AdminNominations() {
                         onClick={() => viewManifesto(n)}
                         className="text-indigo-600 hover:text-indigo-800 text-sm font-medium underline"
                       >
-                        📄 View Manifesto & Review
+                        📄 View Manifesto
                       </button>
                     )}
                     {n.rejection_reason && (

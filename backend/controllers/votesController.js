@@ -5,6 +5,39 @@ const { genToken, hashToken, genBallotId } = require('../utils/tokenUtils');
 const { v4: uuidv4 } = require('uuid');
 
 /*
+ * Purpose: Check if student has already voted in an election (lightweight check)
+ * Parameters: req - authenticated student request; params.electionId required.
+ *   res - returns { has_voted: boolean, voted_at: timestamp|null }
+ * Notes: This is a read-only check that doesn't generate tokens
+ */
+exports.checkVoteStatus = async (req, res) => {
+  const studentId = req.user.id;
+  const electionId = req.params.electionId;
+  
+  try {
+    const [vsRows] = await pool.query(
+      'SELECT has_voted, voted_at FROM VoterStatus WHERE student_id = ? AND election_id = ?',
+      [studentId, electionId]
+    );
+    
+    if (!vsRows.length) {
+      return res.status(404).json({ 
+        error: 'Student not eligible to vote in this election',
+        has_voted: false 
+      });
+    }
+    
+    res.json({
+      has_voted: !!vsRows[0].has_voted,
+      voted_at: vsRows[0].voted_at || null
+    });
+  } catch (err) {
+    console.error('checkVoteStatus error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+/*
  * Purpose: Return an existing unused voting token for the student or create a new one.
  * Parameters: req - authenticated student request; params.electionId required.
  *   res - returns the plaintext token (for frontend use) and status.

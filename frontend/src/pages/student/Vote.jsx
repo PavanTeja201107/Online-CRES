@@ -16,7 +16,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { getMyActiveElection } from '../../api/electionApi';
 import { listApprovedByElection } from '../../api/nominationApi';
-import { getVoteToken, castVote } from '../../api/voteApi';
+import { getVoteToken, castVote, checkVoteStatus } from '../../api/voteApi';
 import { getPolicy, acceptPolicy, getPolicyStatus } from '../../api/policyApi';
 
 export default function VotePage() {
@@ -32,12 +32,45 @@ export default function VotePage() {
   const [accepted, setAccepted] = useState(false);
   const [alreadyVoted, setAlreadyVoted] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [votingNotStarted, setVotingNotStarted] = useState(false);
+  const [votingEnded, setVotingEnded] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         const e = await getMyActiveElection();
         setElection(e);
+
+        // Check if voting window is active
+        const now = new Date();
+        const voteStart = new Date(e.voting_start);
+        const voteEnd = new Date(e.voting_end);
+
+        if (now < voteStart) {
+          // Voting hasn't started yet
+          setVotingNotStarted(true);
+          setCheckingStatus(false);
+          return;
+        }
+
+        if (now > voteEnd) {
+          // Voting has ended
+          setVotingEnded(true);
+          setCheckingStatus(false);
+          return;
+        }
+
+        // Check if user has already voted FIRST (before fetching candidates)
+        try {
+          const voteStatus = await checkVoteStatus(e.election_id);
+          if (voteStatus.has_voted) {
+            setAlreadyVoted(true);
+            setCheckingStatus(false);
+            return;
+          }
+        } catch (error) {
+          console.warn('Failed to check vote status:', error);
+        }
 
         // Fetch candidates with manifesto
         const list = await listApprovedByElection(e.election_id);
@@ -163,6 +196,53 @@ export default function VotePage() {
           </div>
         )}
 
+        {/* Voting Not Started */}
+        {votingNotStarted && election && (
+          <div className="bg-white rounded-lg shadow-md p-8">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">⏰</div>
+              <h2 className="text-xl font-semibold text-gray-700 mb-2">Voting Window Not Started</h2>
+              <p className="text-gray-600 mb-4">
+                The voting period has not begun yet. Please come back during the voting window.
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-900 mb-2">Election Details:</h3>
+              <div className="space-y-2 text-sm text-blue-800">
+                <p>
+                  <span className="font-medium">Election ID:</span> {election.election_id}
+                </p>
+                <p>
+                  <span className="font-medium">Voting Starts:</span>{' '}
+                  {new Date(election.voting_start).toLocaleString('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                  })}
+                </p>
+                <p>
+                  <span className="font-medium">Voting Ends:</span>{' '}
+                  {new Date(election.voting_end).toLocaleString('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Voting Ended */}
+        {votingEnded && (
+          <div className="bg-white rounded-lg shadow-md p-8 text-center">
+            <div className="text-6xl mb-4">📋</div>
+            <h2 className="text-xl font-semibold text-gray-700 mb-2">Voting Period Ended</h2>
+            <p className="text-gray-600">
+              The voting period for this election has ended. Results will be published soon.
+            </p>
+          </div>
+        )}
+
         {/* Already Voted Message */}
         {alreadyVoted && (
           <div className="bg-indigo-50 border-2 border-indigo-300 rounded-lg p-6 text-center">
@@ -189,7 +269,7 @@ export default function VotePage() {
         )}
 
         {/* Election Info and Get Token Button */}
-        {!alreadyVoted && election && (
+        {!alreadyVoted && !votingNotStarted && !votingEnded && election && (
           <div className="bg-white p-4 rounded shadow mb-6">
             <div className="mb-3">
               <strong className="text-gray-700">Election ID:</strong>{' '}
@@ -206,7 +286,7 @@ export default function VotePage() {
         )}
 
         {/* Candidate List - Simplified Radio Button UI */}
-        {!alreadyVoted && token && candidates.length > 0 && (
+        {!alreadyVoted && !votingNotStarted && !votingEnded && token && candidates.length > 0 && (
           <div className="space-y-4 mb-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-3">Select Your Candidate</h2>
 
@@ -276,7 +356,7 @@ export default function VotePage() {
         )}
 
         {/* Submit Vote Button */}
-        {!alreadyVoted && token && (
+        {!alreadyVoted && !votingNotStarted && !votingEnded && token && (
           <div className="mt-6">
             <button
               onClick={vote}

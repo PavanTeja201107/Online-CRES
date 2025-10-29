@@ -35,7 +35,7 @@ export default function Button({
   disabled,
   ...props
 }) {
-  const cn = `inline-flex items-center justify-center rounded transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${VARIANTS[variant]} ${SIZES[size]} ${className}`;
+  const cn = `inline-flex items-center justify-center rounded transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${VARIANTS[variant]} ${SIZES[size]} ${disabled || loading ? 'opacity-50 cursor-not-allowed' : ''} ${className}`;
   return (
     <button className={cn} disabled={disabled || loading} {...props}>
       {loading && (

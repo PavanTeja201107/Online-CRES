@@ -28,6 +28,7 @@ import { useToast } from '../../components/ui/ToastProvider';
 
 export default function AdminElections() {
   const [elections, setElections] = useState([]);
+  const [filteredElections, setFilteredElections] = useState([]);
   const [form, setForm] = useState({
     class_id: '',
     nomination_start: '',
@@ -41,14 +42,77 @@ export default function AdminElections() {
   const [classes, setClasses] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Search/Filter states
+  const [searchClassId, setSearchClassId] = useState('');
+  const [searchActive, setSearchActive] = useState('');
+  const [searchPublished, setSearchPublished] = useState('');
+  const [searchErr, setSearchErr] = useState('');
+
   const load = async () => {
     try {
       const list = await getElections();
       setElections(list);
+      setFilteredElections(list);
     } catch (e) {
       setErr(e.response?.data?.error || 'Failed to load');
     }
   };
+
+  const applyFilters = () => {
+    // Validation: Class ID must be selected
+    if (!searchClassId) {
+      setSearchErr('Please select Class ID to search');
+      setTimeout(() => setSearchErr(''), 3000);
+      return;
+    }
+
+    setSearchErr('');
+    let filtered = [...elections];
+
+    console.log('All elections:', elections);
+    console.log('Selected Class ID:', searchClassId, 'Type:', typeof searchClassId);
+
+    // Filter by Class ID (handle both string and number comparison)
+    filtered = filtered.filter((e) => {
+      console.log('Comparing:', e.class_id, '(type:', typeof e.class_id, ') with', searchClassId);
+      // Use loose equality to handle string vs number mismatch
+      return e.class_id == searchClassId;
+    });
+
+    console.log('After class filter:', filtered);
+
+    // Filter by Active status
+    if (searchActive !== '') {
+      const isActive = searchActive === 'true';
+      filtered = filtered.filter((e) => {
+        // Handle both boolean and number (1/0) values
+        const eleActive = e.is_active === true || e.is_active === 1;
+        return eleActive === isActive;
+      });
+    }
+
+    // Filter by Published status
+    if (searchPublished !== '') {
+      const isPublished = searchPublished === 'true';
+      filtered = filtered.filter((e) => {
+        // Handle both boolean and number (1/0) values
+        const elePublished = e.is_published === true || e.is_published === 1;
+        return elePublished === isPublished;
+      });
+    }
+
+    console.log('Final filtered:', filtered);
+    setFilteredElections(filtered);
+  };
+
+  const resetFilters = () => {
+    setSearchClassId('');
+    setSearchActive('');
+    setSearchPublished('');
+    setSearchErr('');
+    setFilteredElections(elections);
+  };
+
   useEffect(() => {
     load();
     (async () => {
@@ -108,10 +172,12 @@ export default function AdminElections() {
         {err && <div className="text-red-600 mb-2">{err}</div>}
         {msg && <div className="text-green-600 mb-2">{msg}</div>}
 
+        {/* Create New Election Form */}
         <form
           onSubmit={submit}
           className="bg-white p-4 rounded shadow grid md:grid-cols-2 gap-3 mb-6"
         >
+          <h2 className="md:col-span-2 text-lg font-semibold mb-2">Create New Election</h2>
           <Select
             label="Class"
             required
@@ -167,7 +233,65 @@ export default function AdminElections() {
           </Button>
         </form>
 
+        {/* Search Error Message */}
+        {searchErr && <div className="text-red-600 mb-2">{searchErr}</div>}
+
+        {/* Search/Filter Section */}
+        <div className="bg-white p-4 rounded shadow mb-4">
+          <h2 className="text-lg font-semibold mb-3">Search Elections</h2>
+          <div className="grid md:grid-cols-3 gap-3 items-end">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Class ID <span className="text-red-600">*</span>
+              </label>
+              <Select
+                value={searchClassId}
+                onChange={(e) => setSearchClassId(e.target.value)}
+              >
+                <option value="">-- Select Class --</option>
+                {classes.map((c) => (
+                  <option key={c.class_id} value={c.class_id}>
+                    {c.class_id} - {c.class_name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <Select
+              label="Active Status"
+              value={searchActive}
+              onChange={(e) => setSearchActive(e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </Select>
+            <Select
+              label="Published Status"
+              value={searchPublished}
+              onChange={(e) => setSearchPublished(e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="true">Published</option>
+              <option value="false">Not Published</option>
+            </Select>
+            <div className="md:col-span-3 flex gap-2">
+              <Button onClick={applyFilters} disabled={!searchClassId}>
+                Apply Filters
+              </Button>
+              <Button variant="secondary" onClick={resetFilters}>
+                Reset
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Elections List Table */}
         <div className="bg-white rounded shadow overflow-auto">
+          <div className="p-3 bg-gray-50 border-b">
+            <span className="text-sm text-gray-600">
+              Showing {filteredElections.length} of {elections.length} elections
+            </span>
+          </div>
           <table className="min-w-full text-sm">
             <thead>
               <tr className="bg-gray-100 text-left">
@@ -182,7 +306,7 @@ export default function AdminElections() {
               </tr>
             </thead>
             <tbody>
-              {elections.map((e) => (
+              {filteredElections.map((e) => (
                 <tr key={e.election_id} className="border-b">
                   {/* Select checkbox removed */}
                   <td className="p-2">{e.election_id}</td>
