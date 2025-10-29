@@ -327,25 +327,49 @@ export default function AdminElections() {
                   <td className="p-2">{e.is_active ? 'Yes' : 'No'}</td>
                   <td className="p-2">{e.is_published ? 'Yes' : 'No'}</td>
                   <td className="p-2 flex gap-2">
-                    {/* Only show notification buttons, remove activate/publish */}
-                    <button
-                      onClick={async () => {
-                        await notifyNominationOpen(e.election_id);
-                        push('Nomination notifications sent', 'success');
-                      }}
-                      className="text-blue-600"
-                    >
-                      Notify Nomination
-                    </button>
-                    <button
-                      onClick={async () => {
-                        await notifyVotingOpen(e.election_id);
-                        push('Voting notifications sent', 'success');
-                      }}
-                      className="text-blue-600"
-                    >
-                      Notify Voting
-                    </button>
+                    {(() => {
+                      const now = Date.now();
+                      const nomEnded = new Date(e.nomination_end).getTime() < now;
+                      const voteEnded = new Date(e.voting_end).getTime() < now;
+
+                      // Helper to show toast on error and success
+                      const safeNotify = async (fn, id, successMsg) => {
+                        try {
+                          await fn(id);
+                          push(successMsg, 'success');
+                        } catch (err) {
+                          push(err.response?.data?.error || 'Failed to send notification', 'error');
+                        }
+                      };
+
+                      return (
+                        <>
+                          <button
+                            onClick={async () => {
+                              if (nomEnded) return;
+                              await safeNotify(notifyNominationOpen, e.election_id, 'Nomination notifications sent');
+                            }}
+                            disabled={nomEnded}
+                            className={`px-2 py-1 rounded text-sm font-medium ${nomEnded ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50'}`}
+                            title={nomEnded ? 'Nomination period has ended' : 'Send nomination open notification'}
+                          >
+                            Notify Nomination
+                          </button>
+
+                          <button
+                            onClick={async () => {
+                              if (voteEnded) return;
+                              await safeNotify(notifyVotingOpen, e.election_id, 'Voting notifications sent');
+                            }}
+                            disabled={voteEnded}
+                            className={`px-2 py-1 rounded text-sm font-medium ${voteEnded ? 'text-gray-400 bg-gray-100 cursor-not-allowed' : 'text-blue-600 hover:bg-blue-50'}`}
+                            title={voteEnded ? 'Voting period has ended' : 'Send voting open notification'}
+                          >
+                            Notify Voting
+                          </button>
+                        </>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}

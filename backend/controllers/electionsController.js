@@ -154,6 +154,14 @@ exports.notifyVotingOpen = async (req, res) => {
       return res.status(404).json({ error: 'Election not found' });
     const election = eRows[0];
 
+    // Do not send voting-open notifications for elections that have already ended
+    const now = new Date();
+    const voteStart = new Date(election.voting_start);
+    const voteEnd = new Date(election.voting_end);
+    if (now > voteEnd) {
+      return res.status(400).json({ error: 'Voting period has already ended; notification disabled.' });
+    }
+
     // fetch students emails in class
     const [students] = await pool.query(
       'SELECT email, name FROM Student WHERE class_id = ?',
@@ -215,7 +223,7 @@ exports.notifyVotingOpen = async (req, res) => {
               <p style='margin: 0;'><strong>💡 Your vote matters!</strong> Every eligible student is encouraged to exercise their right to vote and help choose your Class Representative.</p>
             </div>
             
-            <p>If you experience any technical issues or have questions, please contact our support team at <a href='mailto:[Support Email Address]' style='color: #2563eb;'>[Support Email Address]</a>.</p>
+            <p>If you experience any technical issues or have questions, please contact the Election Committee.</p>
             
             <hr style='border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;'>
             
@@ -256,6 +264,13 @@ exports.notifyNominationOpen = async (req, res) => {
     if (!eRows.length)
       return res.status(404).json({ error: 'Election not found' });
     const election = eRows[0];
+    // Do not send nomination-open notifications for elections where nomination has already ended
+    const now = new Date();
+    const nomStart = new Date(election.nomination_start);
+    const nomEnd = new Date(election.nomination_end);
+    if (now > nomEnd) {
+      return res.status(400).json({ error: 'Nomination period has already ended; notification disabled.' });
+    }
     const [students] = await pool.query(
       'SELECT email, name FROM Student WHERE class_id = ?',
       [election.class_id]
@@ -309,7 +324,7 @@ exports.notifyNominationOpen = async (req, res) => {
             
             <p>Please ensure you meet all eligibility criteria before submitting your nomination.</p>
             
-            <p>If you have any questions about the nomination process or eligibility requirements, please contact our support team at <a href='mailto:[Support Email Address]' style='color: #2563eb;'>[Support Email Address]</a>.</p>
+            <p>If you experience any technical issues or have questions, please contact the Election Committee.</p>
             
             <hr style='border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;'>
             

@@ -35,6 +35,29 @@ export default function AdminProfile() {
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
+  /**
+   * Validate password strength for reset/change operations.
+   * Returns null when valid, otherwise returns a human-friendly error message.
+   * Rules:
+   *  - At least 6 characters
+   *  - Contains at least one special character
+   *  - Contains at least one uppercase letter
+   *  - Contains at least one number
+   */
+  const validatePassword = (password) => {
+    const lengthCheck = password.length >= 6;
+    const specialCharCheck = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const uppercaseCheck = /[A-Z]/.test(password);
+    const numberCheck = /[0-9]/.test(password);
+
+    if (!lengthCheck) return 'Password must be at least 6 characters long';
+    if (!specialCharCheck) return 'Password must contain at least one special character';
+    if (!uppercaseCheck) return 'Password must contain at least one uppercase letter';
+    if (!numberCheck) return 'Password must contain at least one number';
+
+    return null;
+  };
+
   const load = async () => {
     try {
       const data = await getAdminProfile();
@@ -94,10 +117,14 @@ export default function AdminProfile() {
       setErr('Please fill all fields');
       return;
     }
-    if (newPw.length < 6) {
-      setErr('Password must be at least 6 characters');
+
+    // Validate password strength
+    const validationError = validatePassword(newPw);
+    if (validationError) {
+      setErr(validationError);
       return;
     }
+
     if (newPw !== confirmPw) {
       setErr('Passwords do not match');
       return;
